@@ -14,3 +14,7 @@ tracing = { workspace = true }
 flate2 = { workspace = true }
 md5 = { workspace = true }
 bytes = { workspace = true }
+sha2 = { workspace = true }
+serde_json = { workspace = true }
+# QA-only encrypted GRF envelope; never a stock Ragexe loadable GRF.
+aes-gcm = "0.10.3"
