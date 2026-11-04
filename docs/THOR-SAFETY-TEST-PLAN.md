@@ -3,7 +3,7 @@
 File Path: /docs/THOR-SAFETY-TEST-PLAN.md
 Purpose: Explain forked BEAM's initial THOR correctness and safety tests
 Module: ClientDistribution — Markdown
-Version: 1.4.0
+Version: 1.5.0
 Description: Persistent recovery journal, unsafe path rejection and client-root single-writer lock.
 Dependency Layer: Tool
 
@@ -52,7 +52,9 @@ CI exercises `beam-formats` and `beam-core` parser and transaction tests. It is 
 
 The CI downloads the exact pinned `turkuaz-2022-hybrid-8cfc3211f8eb.thor` file from the `b1glord/ROenglishRE` Hybrid test prerelease, verifies SHA-256 `e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8`, parses the real THOR and applies its loose `SystemEN/` and `data/` entries inside a disposable directory. It compares the resulting bytes and asserts that no GRF was generated. This is **NOT an in-game Windows 2022 client acceptance**.
 
-GitHub-hosted Windows CI checks the same parser, client file writer, crash recovery and single-writer lock without needing FURY online. Independent self-hosted FURY Windows smoke remains a required pre-merge project gate.
+GitHub-hosted Windows CI checks the same parser, client file writer, crash recovery and single-writer lock without needing FURY online. The private FURY Windows smoke is **opt-in** for CI scheduling: set repository Actions variable `BEAM_FURY_THOR_RUNNER_ENABLED=true` only when the authorized Windows x64 runner is online. When unset, the FURY job reports **SKIPPED**, never PASS; the hosted Windows job remains mandatory. This removes the permanent offline-runner queue without claiming FURY hardware acceptance.
+
+**Release gate unchanged:** a skipped FURY job is not evidence of real Windows 10 / game-client testing. FURY-specific acceptance, mixed GRF+loose transaction scenarios, crash/power-loss recovery, and signed product distribution still require separate review before production merge/release.
 
 ## BEAM vs rPatchur patch-list compatibility
 
