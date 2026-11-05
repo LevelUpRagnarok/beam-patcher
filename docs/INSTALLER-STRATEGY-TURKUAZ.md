@@ -2,8 +2,8 @@
 Dosya Yolu: docs/INSTALLER-STRATEGY-TURKUAZ.md
 Amac: Beam QA paketlemesinden TurkuazInstaller'a guvenli gecis plani ve kabul sinirlari
 Modul - Markdown documentation
-Version: 0.2.0-candidate
-Aciklama: Inno Setup gecici QA artifact olarak kalir; imzali Turkuaz manifest ve Velopack E2E tamamlaninca gecis yapilir
+Version: 0.2.1-candidate
+Aciklama: Inno/NSIS tekli dagitimi yasak; Turkuaz signed primary gate tamamlanmadan paylasim yok
 Bagimli Oldugu Katman: installer/windows/BeamPatcher-QA.iss | TurkuazLabs/TurkuazInstaller/docs/PROJECT_INTEGRATION.md
 -->
 
@@ -109,6 +109,8 @@ redistributed as a signed product installer.
 - Release signing keys/cert identities and real Ragnarok 2022 client
   compatibility are **not established** by the Beam QA tests.
 
-The migration is **NOT IMPLEMENTED / NOT RELEASED**. Do not describe it as
+The **signed product distribution gate is NOT ACCEPTED / NOT RELEASED**. Do not describe it as
 production-ready until a separate pinned Turkuaz integration PR runs the
 upstream signed manifest + full-package acceptance.
+
+**Documentation alignment (2026-11-05):** The old PR #13 standalone installer download steps are retired. See [Windows Setup and Patch QA](WINDOWS-SETUP-PATCH-QA.md) for the current private NSIS smoke and protected dual installer workflow distinction. A passing PR policy contract is not signed product acceptance.

@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: BURAK-INS-001 primary ve backup dagitim bypass negatif regresyonlari
 # Modul - Python unittest
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Degisen manifest, eksik sidecar, farkli SHA, yanlış rol ve standalone upload reddi
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | tools/check_installer_workflows.py
 
@@ -106,7 +106,8 @@ class InstallerDistributionContractTests(unittest.TestCase):
                         "tools/verify_installer_pair.py",
                         "tools/check_installer_workflows.py",
                         "tools/Confirm-TurkuazTrust.ps1",
-                        "docs/INSTALLER-STRATEGY-TURKUAZ.md"):
+                        "docs/INSTALLER-STRATEGY-TURKUAZ.md",
+                        "docs/WINDOWS-SETUP-PATCH-QA.md"):
                 file = root / rel
                 file.parent.mkdir(parents=True, exist_ok=True)
                 file.write_text("policy stub")
@@ -120,6 +121,37 @@ class InstallerDistributionContractTests(unittest.TestCase):
             self.assertTrue(any("standalone setup upload" in err for err in policy_errors(root)))
             standalone.unlink()
             self.assertFalse(policy_errors(root))
+
+
+    def test_retired_standalone_setup_guide_is_rejected(self):
+        with tempfile.TemporaryDirectory(prefix="test-policy-docs-") as tmp:
+            root = Path(tmp)
+            for rel in ("installer/windows/BeamPatcher-NSIS-Backup.nsi",
+                        "tools/verify_installer_pair.py",
+                        "tools/check_installer_workflows.py",
+                        "tools/Confirm-TurkuazTrust.ps1",
+                        "docs/INSTALLER-STRATEGY-TURKUAZ.md",
+                        "docs/WINDOWS-SETUP-PATCH-QA.md"):
+                file = root / rel
+                file.parent.mkdir(parents=True, exist_ok=True)
+                file.write_text("policy stub", encoding="utf-8")
+            workflows = root / ".github/workflows"
+            workflows.mkdir(parents=True)
+            (workflows / "dual-installer-policy.yml").write_text(
+                "windows-latest\nTurkuazInstaller NSIS\nverify_installer_pair.py\n"
+                "Confirm-TurkuazTrust.ps1\nactions/upload-artifact@v4",
+                encoding="utf-8",
+            )
+            self.assertFalse(policy_errors(root))
+            guide = root / "docs/WINDOWS-SETUP-PATCH-QA.md"
+            guide.write_text(
+                "Download the short-lived `levelup-beam-windows-setup-qa-<SHA>` artifact",
+                encoding="utf-8",
+            )
+            self.assertTrue(any("retired standalone setup" in err
+                                for err in policy_errors(root)))
+
+
 
 
 if __name__ == "__main__":

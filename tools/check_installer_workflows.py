@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/check_installer_workflows.py
 # Amac: BURAK-INS-001 bypass eden Inno/NSIS tekli setup uploadlarini reddetmek
 # Modul - Python / CI static policy checker
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Tum github workflows ve installer source yapisi uzerinde fail-closed disiplini
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | .github/workflows
 
@@ -20,6 +20,7 @@ REQUIRED = (
     "tools/check_installer_workflows.py",
     "tools/Confirm-TurkuazTrust.ps1",
     "docs/INSTALLER-STRATEGY-TURKUAZ.md",
+    "docs/WINDOWS-SETUP-PATCH-QA.md",
 )
 
 
@@ -28,6 +29,14 @@ def policy_errors(root: Path) -> list[str]:
     for relative in REQUIRED:
         if not (root / relative).is_file():
             errors.append(f"missing installer policy component: {relative}")
+
+    # Retired standalone setup instructions are a policy bypass even if
+    # the workflow no longer uploads the obsolete unsigned artifact.
+    guide = root / "docs/WINDOWS-SETUP-PATCH-QA.md"
+    if guide.is_file():
+        guidance = guide.read_text(encoding="utf-8")
+        if re.search(r"(?is)download\s+the\s+short-lived\s+`levelup-beam-windows-setup-qa", guidance):
+            errors.append("Windows QA guide advertises retired standalone setup download")
 
     workflows = root / ".github/workflows"
     candidates = list(workflows.glob("*.yml")) + list(workflows.glob("*.yaml"))

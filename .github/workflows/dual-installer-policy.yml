@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/.github/workflows/dual-installer-policy.yml
 # Amac: BURAK-INS-001 Turkuaz primary ve NSIS private fallback'u tek run'da uretme/gate
 # Modul - GitHub Actions / Windows dual installer
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Imza/trust/urun E2E olmadan artifact paylasmaz; Inno ve tekli NSIS yok
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | TurkuazLabs/TurkuazInstaller
 
@@ -15,6 +15,8 @@ on:
       - "tools/check_installer_workflows.py"
       - ".github/workflows/**"
       - "docs/INSTALLER-STRATEGY-TURKUAZ.md"
+      - "docs/WINDOWS-SETUP-PATCH-QA.md"
+      - "tools/tests/test_installer_distribution_policy.py"
   workflow_dispatch:
 
 permissions:

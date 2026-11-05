@@ -1,100 +1,94 @@
 <!--
-Dosya Yolu: docs/WINDOWS-SETUP-PATCH-QA.md
-Amac: Beam QA kurulumu, manuel BEAM patch ve Windows artifacts icin kabul sinirlari
+Dosya Yolu: REPO_ROOT/docs/WINDOWS-SETUP-PATCH-QA.md
+Amac: Beam Windows QA test adimlarini ve imzali kurulum dagitim sinirini anlatmak
 Modul - Markdown deployment/testing guide
-Version: 0.2.0-candidate
-Aciklama: 2022 public feed acilmadan kullanilabilen installer ve sentetik patch E2E
-Bagimli Oldugu Katman: .github/workflows/windows-setup-patch-qa.yml | installer/windows/BeamPatcher-QA.iss
+Version: 0.3.0-candidate
+Aciklama: BURAK-INS-001 tekli Inno ve NSIS kurulum dagitimini reddeder
+Bagimli Oldugu Katman: .github/workflows/windows-setup-patch-qa.yml | .github/workflows/dual-installer-policy.yml
 -->
 
-# Turkuaz Ragnarok Online - Windows Setup & Patch QA
+# Turkuaz Ragnarok Online - Windows Setup and Patch QA
 
-**Status: Candidate / NOT production.** The Windows x64 installer is deliberately
-separate from a real Ragnarok client installer. It contains the actual
-`beam-patcher.exe` Tauri/Rust launcher, four theme styles, a safe YAML config
-and an uninstall entry. **No licensed client EXE, GRF, DATA.INI, patch feed,
-SSL keys, credentials or game binaries are bundled.**
+**Status: DEVELOPMENT / NOT PRODUCTION / NO DOWNLOADABLE STANDALONE SETUP.**
 
-## QA installation
+This project contains a Rust/Tauri Beam launcher and four opt-in visual
+themes. The candidate QA profile contains **no** licensed Ragnarok client
+EXE, original GRFs, DATA.INI, private keys or game patch feeds.
 
-1. Open the [Windows Setup and Patch QA Actions workflow](../.github/workflows/windows-setup-patch-qa.yml)
-   for the specific head commit on PR #13.
-2. Download the short-lived `levelup-beam-windows-setup-qa-<SHA>` artifact
-   **only when BOTH Windows test job and installer smoke are PASS**.
-3. Verify `setup-qa-report.json` SHA256 against the extracted
-   `LevelUpGames-BeamPatcher-QA-Setup.exe`. It is an unsigned test build.
-4. Install as the current Windows user. No admin access is required.
-5. Create a separate, disposable QA directory. Never select the running
-   `D:\Ragnarok` or the installation containing personal game data.
-6. Launch Beam QA. When prompted, choose the disposable game directory.
-   Theme gallery lives in **Appearance / Settings**. Live news is not required.
-7. QA default output is `levelup-qa.grf`, a new unregistered 0x200 GRF.
-   The **Manual Patch** button accepts `.beam`, `.thor`, `.rgz`, `.gpf`.
-   Loose-file THORs are rejected; their transaction-safe client writer is
-   not implemented. Normal patch feed is disabled: `127.0.0.1:9/disabled`.
-   The launcher **never enables Play** in QA mode. Appearance Settings exposes
-   **Test Klasoru Sec** for selecting a fresh, empty workspace; a successful
-   manual patch reports success in the patch progress label.
+## Active Windows installer policy: BURAK-INS-001
 
-   **Code-enforced QA isolation** (`patcher.qa_only: true`) accepts only an
-   absolute existing directory that is empty or contains only
-   `levelup-qa.grf` and the expected `.patch_cache/applied_patches.txt`.
-   Existing DATA.INI, game EXE/GRF, arbitrary files and symlink/junction
-   paths are rejected before any new cache or GRF is created.
-   All remote patchlist/mirror URLs must be HTTP loopback (`127.0.0.1`);
-   production feeds, other GRF names, missing checksums and a configured
-   game EXE are rejected. This is an accidental-damage protection policy,
-   not a tamper-proof sandbox against someone editing the configuration.
-8. Uninstall from Windows settings; external QA GRFs and edited user
-   config remain intentionally intact. Inspect files before deletion.
+- The `Beam Windows Patch QA and Private NSIS Smoke` workflow builds the
+  actual Rust launcher and runs an isolated synthetic patch download/GRF
+  regression. It privately builds, installs and uninstalls an NSIS backup
+  on the GitHub-hosted Windows runner. **It deliberately uploads no setup.**
+- `installer/windows/BeamPatcher-QA.iss` is retained for historical
+  reference only. It is not a supported standalone distribution channel.
+- `Beam Dual Installer (Turkuaz Primary, NSIS Private)` provides the
+  only conditional distribution gate. It is manually dispatched in a
+  protected signing environment and must verify signed Turkuaz binaries,
+  a detached CMS manifest, independent certificate pin, Velopack package,
+  native install/update/repair/rollback/uninstall and NSIS recovery smoke.
+- The private NSIS backup is **never** a public fallback if Turkuaz signing
+  or acceptance fails. No successful source or Chromium CI run overrides
+  this requirement.
+- The installer policy contract runs on every relevant PR. A
+  `policy-contract` PASS **does not** mean `build-both-and-gate` PASS:
+  the signed Windows product test must complete separately.
 
-**Note:** The launcher `client_exe` is deliberately
-`NO_CLIENT_CONFIGURED.exe`, so the QA package does not launch a real game.
-To bind a real client requires verified executable identity and region
-compatibility; do not simply set the active game directory in this package.
+**Do not download/share previous standalone Inno/NSIS setup artifacts as
+current Beam installers.** The earlier `levelup-beam-windows-setup-qa`
+artifact and `LevelUpGames-BeamPatcher-QA-Setup.exe` are retired,
+unsigned historical test products and not the current distribution path.
 
-## Reproducible test patch
+## How to verify the current developer build
 
-The CI runs `tools/QA-PATCH-E2E.py` against **actual** compiled
-`beam-patcher.exe` with a generated synthetic `.beam` and localhost HTTP
-server. Expected assertions:
+1. Open the [Windows Patch QA workflow](../.github/workflows/windows-setup-patch-qa.yml)
+   for the exact commit on the intended development PR.
+2. Check that the format/core Rust tests, Windows executable build,
+   `tools/QA-PATCH-E2E.py`, installer policy check and **private**
+   NSIS install/uninstall smoke all pass. No separate setup artifact is
+   expected from this workflow.
+3. Check the [dual installer policy workflow](../.github/workflows/dual-installer-policy.yml).
+   Its PR contract job confirms that no standalone setup bypass exists.
+   A signed product build is **NOT_RUN** unless the protected manual
+   workflow was dispatched and every signature and native test passed.
+4. The [theme QA workflow](../.github/workflows/ragnar-legacy-theme-qa.yml)
+   exercises all four visual themes with mocked/offline browser tests and
+   may upload screenshots. Screenshots are not a Windows setup or native
+   WebView2 acceptance result.
+5. For a local developer smoke test, compile the candidate from source
+   in a disposable Windows VM and use an **empty synthetic** QA game
+   directory. Do not replace a production installation or point the
+   launcher at the actual Ragnarok client.
 
-- Download BEAM with complete SHA-256 and apply into disposable GRF 0x200.
-- Read GRF magic, version and number of synthetic entries.
-- Re-run without changing already applied content, using the cache.
-- Apply the same BEAM manually into another disposable GRF.
-- Offer a corrupted BEAM with declared bad digest: reject it; target GRF hash
-  and applied-patch cache remain unchanged.
-- Reject a directory containing a simulated production DATA.INI and a remote
-  update feed before any GRF/cache I/O.
-- Reject a fresh bad-only download without leaving a header-only GRF.
-- Quiet-install the Inno Setup installer into a disposable folder, verify
-  launcher/config/guide presence, unsafe headless startup refusal, upgrade
-  config preservation, and uninstall.
+## Offline QA profile
 
-All test outputs should declare actual status. The CI artifact is retained
-7 days and is NOT a signed release or a production patch channel.
+`installer/windows/config.qa.yml` is loopback-only and sets
+`patcher.qa_only: true`, `client_exe: NO_CLIENT_CONFIGURED.exe`,
+`target_grf: levelup-qa.grf` and `updater.enabled: false`.
+It is a test guard, **not** a tamper-resistant security boundary.
 
-## Known limits before live patching
+For the old PR #13 implementation, the QA launcher accepts only an
+absolute existing directory that is empty or holds its own expected QA GRF
+and cache. It rejects existing game EXE/GRF/DATA.INI, remote patch feeds,
+symlink/junction paths and an unconfigured or mismatched profile before
+new GRF/cache writes. Manual patch tests use synthetic fixtures only.
+The public game feed remains disabled.
 
-- The full `LevelUpGT/RagnarokClient/client/base` is not checked into Git,
-  so this installer is **patcher only**, not the full Ragnarok client.
-- Exact 20220406 EXE SHA, DATA.INI order and protected loader compatibility
-  require isolated game-clone verification; loader has not been proven.
-- This release does **not** modify `ragnardata.grf`, `data.grf`,
-  `tdata1.grf` or the real `DATA.INI`.
-- Existing patches and GRF recovery backups must be validated on a disposable
-  clone with rollback and actual readback before production feed approval.
-- The public 2022 `b1glord/ragnarokclientpatch` feed remains unpublished.
-- A source CI PASS is not native Windows gameplay smoke or map-warp PASS.
-- Built QA installer needs signing/provenance review before public distribution.
-- Default config resides beside the per-user installed binary and is not
-  overwritten on setup upgrades. Game-directory choice is explicit.
+`tools/QA-PATCH-E2E.py` tests synthetic BEAM SHA-256 verification, a
+disposable GRF 0x200, applied-patch cache behavior, corrupt archive
+refusal and unsafe directory rejection. This is **not** an in-game
+Ragnarok login, map loading or patch rollback acceptance test.
 
-## Development boundaries
+## Before a user-facing installer exists
 
-- Source branch: `feat/windows-setup-patch-qa-20261025` with PR #13 stacked on
-  visual theme PR #8. No merging, production release, tag or deployment.
-- `cargo test -p beam-formats --lib`, `cargo test -p beam-core --lib`,
-  `cargo build --release -p beam-patcher` and Windows Inno smoke must pass
-  independently. Compile checks do not count as actual gameplay validation.
+Signing credentials and independently pinned trust must be provisioned
+outside GitHub source. The full Turkuaz primary must pass protected
+Windows native install, update, repair, rollback, uninstall, shortcut,
+non-admin, Unicode-path and user-config preservation checks. The signed
+primary must match the exact source SHA and tested Velopack payload.
+
+A normal source/QA CI PASS, an unsigned installer, a private NSIS smoke
+or a temporary artifact must never be presented as an approved release.
+No `main` merge, player update feed or production deployment is
+authorized by this document.
