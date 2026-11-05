@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/check_rust_installer_candidate.py
 # Amac: Rust TurkuazInstaller .tzpkg ve unsigned manifest onizleme kontratini dogrulamak
 # Modul - Python / Offline candidate package contract
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Kaynak SHA, archive payload, package metadata ve manifest byte bagini denetler; imza dogrulamaz
 # Bagimli Oldugu Katman: TurkuazInstaller/rust/PACKAGE_FORMAT.md | tools/tests/test_rust_installer_candidate.py
 
@@ -40,7 +40,7 @@ def section_scalars(source: str, section: str, fields: tuple[str, ...]) -> dict:
     body = source[m.end():next_top.start() if next_top else len(source)]
     found = {}
     for line in body.splitlines():
-        match = re.fullmatch(r"  ([a-z_]+):[ \t]*(.*)", line)
+        match = re.fullmatch(r"  ([a-z0-9_]+):[ \t]*(.*)", line)
         if not match or match.group(1) not in fields:
             continue
         key, value = match.groups()
