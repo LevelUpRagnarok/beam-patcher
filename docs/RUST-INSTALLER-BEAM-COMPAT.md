@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/RUST-INSTALLER-BEAM-COMPAT.md
 Amac: Beam icin Rust TurkuazInstaller tek-primary uyumluluk ve kabul sinirlari
 Modul - Markdown / Rust Windows QA
-Version: 1.3.0-candidate
+Version: 1.4.0-candidate
 Aciklama: Gercek Beam QA, tek TurkuazSetup; product signer/release ayri
 Bagimli Oldugu Katman: tools/Test-BeamRustEphemeralLifecycle.ps1 | tools/check_rust_installer_candidate.py
 -->
@@ -40,7 +40,11 @@ certificate in GitHub-hosted Windows and checks:
 - Primary install-self and uninstall preserve unmanaged user data.
 
 The GUI wizard is **not automated**, only the self-extractor CLI
-entry point. Neither test certificate nor test EXE is authorized for
+entry point. The setup-gui binary is built with the Windows GUI subsystem;
+the Windows smoke uses a separate ProcessStartInfo with argument-vector
+quoting, asynchronous pipe draining and a bounded wait for the real native
+exit code before checking installed state. A PowerShell direct invocation
+with a stale LASTEXITCODE is never accepted as installation proof. Neither test certificate nor test EXE is authorized for
 end-user distribution. No game client is launched. CI deletes test
 certificates and temporary installs; no setup artifact is uploaded.
 

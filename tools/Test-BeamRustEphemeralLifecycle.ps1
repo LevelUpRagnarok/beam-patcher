@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamRustEphemeralLifecycle.ps1
 # Amac: Beam QA Rust lifecycle ve tek Turkuaz Windows primary setup testi
 # Modul - PowerShell Integration QA
-# Version: 1.2.1-candidate
+# Version: 1.3.0-candidate
 # Aciklama: Gecici CI sertifikasi, gercek Beam EXE, signed bundle; production imzasi degil
 # Bagimli Oldugu Katman: .github/workflows/rust-installer-beam-compat.yml | TurkuazInstaller/rust/CLI.md
 [CmdletBinding()]
@@ -166,6 +166,58 @@ function Assert-TurkuazPrimary {
     return $primary
 }
 
+# @dev-id BEAM-RUST-GUI-PROC-001
+# @purpose Wait for the actual completion of the Windows GUI-subsystem setup.
+# @reason A PowerShell direct invocation can return before a GUI EXE exits;
+#         LASTEXITCODE may then be stale even though install-self is still running.
+# @contract Uses argv-safe ProcessStartInfo, drains stdout/stderr asynchronously,
+#           enforces a bounded timeout, inspects the REAL native process exit code,
+#           then permits the managed-install state verification to run.
+function Invoke-GuiPrimaryAndWait {
+    param([Parameter(Mandatory)][string]$Path,
+          [Parameter(Mandatory)][string[]]$Arguments,
+          [int]$TimeoutMilliseconds = 120000)
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw 'Turkuaz primary GUI executable is missing'
+    }
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new($Path)
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    foreach ($argument in $Arguments) {
+        $null = $startInfo.ArgumentList.Add([string]$argument)
+    }
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    try {
+        if (-not $process.Start()) {
+            throw 'Turkuaz GUI primary could not start'
+        }
+        # Drain pipes in parallel to avoid deadlocking a verbose child process.
+        $standardOutput = $process.StandardOutput.ReadToEndAsync()
+        $standardError = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit($TimeoutMilliseconds)) {
+            $process.Kill($true)
+            $process.WaitForExit()
+            throw 'Turkuaz GUI install-self exceeded the bounded CI timeout'
+        }
+        $outText = $standardOutput.GetAwaiter().GetResult()
+        $errText = $standardError.GetAwaiter().GetResult()
+        $nativeCode = $process.ExitCode
+        if ($nativeCode -ne 0) {
+            $details = (($outText + ' ' + $errText).Trim())
+            if ($details.Length -gt 2048) {
+                $details = $details.Substring(0,2048) + ' [truncated]'
+            }
+            throw "Turkuaz GUI install-self exited $nativeCode : $details"
+        }
+        Write-Host 'BEAM_RUST_TURKUAZ_GUI_SUBSYSTEM_WAIT_EXIT_0'
+    } finally {
+        $process.Dispose()
+    }
+}
+
 try {
     New-Item -ItemType Directory -Force -Path $Work | Out-Null
     Add-Type -AssemblyName System.Security.Cryptography.Pkcs
@@ -220,10 +272,11 @@ try {
     if ($primary -isnot [string] -or -not (Test-Path -LiteralPath $primary -PathType Leaf)) {
         throw 'Turkuaz primary builder returned unexpected stdout instead of one EXE path'
     }
-    $primaryOutput = & $primary install-self --package-id $PackageId --trust-store $Trust --target $Target --data-root $State --operation install 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Turkuaz single setup self-extractor failed: $($primaryOutput -join ' ')"
-    }
+    Invoke-GuiPrimaryAndWait -Path $primary -Arguments @(
+        'install-self','--package-id',$PackageId,
+        '--trust-store',$Trust,'--target',$Target,
+        '--data-root',$State,'--operation','install'
+    ) -TimeoutMilliseconds 120000
     $null = Verify-Version '1.0.2'
     Run-Cli 'Uninstall primary test setup' @(
         'uninstall','--package-id',$PackageId,'--target',$Target,

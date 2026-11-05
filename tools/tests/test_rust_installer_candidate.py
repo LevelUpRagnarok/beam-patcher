@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_rust_installer_candidate.py
 # Amac: Rust TurkuazInstaller onizleme ZIP/manifest sozlesmesinde fail-closed testleri
 # Modul - Python unittest
-# Version: 1.3.1-candidate
+# Version: 1.4.0-candidate
 # Aciklama: Sentetik .tzpkg pozitif/negatif fixture; imza veya gercek Windows install testi degil
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py
 
@@ -175,6 +175,18 @@ class RustCandidateContractTests(unittest.TestCase):
         self.assertIn("$SignToolPath sign /fd SHA256", fixture)
         self.assertIn("$Path | Out-Null", fixture)
         self.assertIn("Turkuaz primary builder returned unexpected stdout", fixture)
+        # A Windows GUI-subsystem app MUST be awaited as a real process.
+        # Direct invocation with LASTEXITCODE was a false-positive exit zero.
+        self.assertIn("Invoke-GuiPrimaryAndWait -Path $primary", fixture)
+        self.assertIn("[System.Diagnostics.ProcessStartInfo]::new($Path)", fixture)
+        self.assertIn("$startInfo.ArgumentList.Add", fixture)
+        self.assertIn("$process.WaitForExit($TimeoutMilliseconds)", fixture)
+        self.assertIn("$process.ExitCode", fixture)
+        self.assertIn("$process.StandardOutput.ReadToEndAsync()", fixture)
+        self.assertIn("$process.StandardError.ReadToEndAsync()", fixture)
+        self.assertIn("$process.Kill($true)", fixture)
+        self.assertIn("BEAM_RUST_TURKUAZ_GUI_SUBSYSTEM_WAIT_EXIT_0", fixture)
+        self.assertNotIn("$primaryOutput = & $primary install-self", fixture)
         self.assertIn("Reject mismatched Turkuaz publisher pin", fixture)
         self.assertIn("install-self --package-id", fixture)
         self.assertIn("TURKUAZ_PRIMARY_PASS_NO_UPLOAD", fixture)
