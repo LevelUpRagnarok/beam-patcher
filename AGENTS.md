@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/AGENTS.md
 Amac: beam-patcher projesinde merkezi DevStandards v3.0.0 uygulama ilkeleri
 Modul - Documentation Markdown
-Version: 3.0.1-candidate
+Version: 3.1.0-candidate
 Aciklama: Pinli standart ile mevcut oyun/runtime katmanlarini koruyan sozlesme
 Bagimli Oldugu Katman: Documentation
 -->
@@ -36,11 +36,14 @@ Bagimli Oldugu Katman: Documentation
   commit'e ait paket, Windows Authenticode yayinci dogrulamasi ve native
   install/update/repair/rollback/uninstall kabul kaniti olmadan hicbir
   setup "hazir" sayilamaz. Her eksikte fail-closed.
+- Yalniz pinlenmis Rust TurkuazInstaller kullanilir: .tzpkg, .tzsetup,
+  TurkuazSetup.exe. Eski .NET ve Velopack installer aktif CI'dan kaldirildi.
 - Rust TurkuazInstaller prototipi QA'da ephemeral imza ile test edilir.
   Test sertifikasi gercek yayinci imzasi veya release izni degildir.
 - CI enforce: tools/check_installer_workflows.py,
   tools/verify_installer_primary.py,
   .github/workflows/turkuaz-primary-policy.yml.
+  Korumali yayin: Rust kaynak, bundle, manifest, CMS, Authenticode ve native Windows E2E.
 - Rust tek-primary adayinin otomatik QA'si
   .github/workflows/rust-installer-beam-compat.yml icindedir.
   Korumali product gate ayri ve workflow_dispatch ile onaylidir.

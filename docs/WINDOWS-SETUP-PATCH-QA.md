@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/WINDOWS-SETUP-PATCH-QA.md
 Amac: Windows patch QA ile TurkuazInstaller primary kabulunu ayri tutar
 Modul - Markdown / Windows QA
-Version: 0.4.0-candidate
+Version: 0.5.0-candidate
 Aciklama: NSIS smokeleri kaldirildi; yalniz TurkuazInstaller kurulum politikasina uygun
 Bagimli Oldugu Katman: .github/workflows/windows-setup-patch-qa.yml | .github/workflows/turkuaz-primary-policy.yml
 -->
@@ -42,7 +42,7 @@ is automated, no game client is launched and no test setup uploaded.
 
 ## Protected product acceptance
 
-The Beam TurkuazInstaller Primary Only workflow runs policy and
+The Beam Rust TurkuazInstaller Primary Only workflow runs policy and
 Windows negative fixtures on pull requests. Its production job
 runs only through protected manual workflow_dispatch. Real publisher
 signing, detached CMS trust, source provenance and native Windows

@@ -1,11 +1,11 @@
 # Dosya Yolu: REPO_ROOT/.github/workflows/turkuaz-primary-policy.yml
-# Amac: TURKUAZ-ONLY-001 sadece TurkuazInstaller primary icin fail-closed dagitim kapisi
+# Amac: TURKUAZ-RUST-ONLY sadece Rust Turkuaz primary icin imzali dagitim kapisi
 # Modul - GitHub Actions / Windows Turkuaz-only installer
-# Version: 2.0.0-candidate
-# Aciklama: Imza/trust/yerel E2E olmadan primary dagitmaz; ikinci installer yok
+# Version: 3.0.0-candidate
+# Aciklama: Rust tzpkg/tzsetup, gerçek imza ve native E2E olmadan dagitmaz
 # Bagimli Oldugu Katman: tools/verify_installer_primary.py | TurkuazLabs/TurkuazInstaller
 
-name: Beam TurkuazInstaller Primary Only
+name: Beam Rust TurkuazInstaller Primary Only
 
 on:
   pull_request:
@@ -14,7 +14,8 @@ on:
       - "tools/verify_installer_primary.py"
       - "tools/check_installer_workflows.py"
       - "tools/Confirm-TurkuazTrust.ps1"
-      - "tools/Assert-BeamManifestSetupBinding.ps1"
+      - "tools/Test-BeamRustProtectedPrimary.ps1"
+      - "tools/check_rust_installer_candidate.py"
       - "tools/Test-BeamTrustNegative.ps1"
       - ".github/workflows/**"
       - "docs/INSTALLER-STRATEGY-TURKUAZ.md"
@@ -26,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: beam-turkuaz-primary-${{ github.ref }}
+  group: beam-rust-turkuaz-primary-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -59,127 +60,132 @@ jobs:
   # Explicitly dispatched only. A PR does NOT produce/share a setup file.
   # A signed Turkuaz product bundle MUST come from a separately secured signing
   # and real installer acceptance process. Missing materials -> fail closed.
+  # Product-signer access is protected and NEVER available on PR runs.
+  # Only external approved real signed Rust releases may pass.
   build-primary-and-gate:
     if: github.event_name == 'workflow_dispatch'
     needs: [policy-contract, trust-negative-fixtures]
     runs-on: windows-latest
     timeout-minutes: 120
     environment: windows-installer-signing
+    env:
+      BEAM_RUNNER_KIND: ${{ runner.environment }}
     steps:
-      - name: Checkout Beam exact source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Checkout pinned Turkuaz Community source
+      - name: Checkout exact pinned Rust TurkuazInstaller
         uses: actions/checkout@v4
         with:
           repository: TurkuazLabs/TurkuazInstaller
-          ref: 1048931bf7498ab4d4440414c4463e6ee5e7421e
-          path: build/turkuaz-upstream
+          ref: 456a34679661978afc717cc5b08ece11cb0b9a94
+          path: build/turkuaz-rust
           persist-credentials: false
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
       - uses: dtolnay/rust-toolchain@stable
-      - name: Compile and test actual Beam patcher
+      - name: Compile actual Beam QA x64 and Rust package engine
         shell: pwsh
         run: |
-          cargo test -p beam-formats --lib
+          cargo test --locked -p beam-formats --lib
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cargo test -p beam-core --lib
+          cargo test --locked -p beam-core --lib
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cargo build --release -p beam-patcher
+          cargo build --locked --release -p beam-patcher
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/QA-PATCH-E2E.py --exe target/release/beam-patcher.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Assemble Beam Velopack full product package
+          cargo test --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-package-engine --lib
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer --release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $root = (Get-Location).Path
+          $cli = Join-Path $root 'build/turkuaz-rust/rust/target/release/turkuaz-installer.exe'
+          $out = Join-Path $root 'build/rust-primary'
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          Copy-Item -LiteralPath $cli -Destination (Join-Path $out 'turkuaz-cli-headless.exe')
+      - name: Compile pinned Rust graphical setup stub
+        shell: pwsh
+        run: |
+          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer --release --features setup-gui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $root = (Get-Location).Path
+          Copy-Item -LiteralPath (Join-Path $root 'build/turkuaz-rust/rust/target/release/turkuaz-installer.exe') -Destination (Join-Path $root 'build/rust-primary/turkuaz-gui-stub.exe')
+      - name: Build exact expected Rust Beam tzpkg from checked-out source
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $stage = Join-Path (Get-Location).Path 'build/turkuaz-stage'
-          $primary = Join-Path (Get-Location).Path 'build/turkuaz-primary/primary'
-          New-Item -ItemType Directory -Force -Path $stage, $primary | Out-Null
-          Copy-Item target/release/beam-patcher.exe "$stage/beam-patcher.exe"
-          Copy-Item installer/windows/config.qa.yml "$stage/config.yml"
-          Copy-Item installer/windows/README-QA.txt "$stage/README-QA.txt"
-          $tools = Join-Path $env:RUNNER_TEMP 'vpk-tools'
-          dotnet tool install vpk --tool-path $tools --version 1.2.161
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $vpk = Join-Path $tools 'vpk.exe'
-          $out = Join-Path (Get-Location).Path 'build/turkuaz-vpk'
-          New-Item -ItemType Directory -Force -Path $out | Out-Null
-          & $vpk --legacyConsole true --yes true --skip-updates true pack --runtime win-x64 --packId levelupgt.beampatcher.qa --packTitle "Turkuaz Ragnarok Online QA" --packVersion 1.0.1 --packDir $stage --mainExe beam-patcher.exe --outputDir $out --delta none --skipVeloAppCheck true
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $setup = Get-ChildItem -LiteralPath $out -Filter '*Setup.exe' | Select-Object -First 1
-          $nupkg = Get-ChildItem -LiteralPath $out -Filter '*-full.nupkg' | Select-Object -First 1
-          if (-not $setup -or -not $nupkg) { throw 'Real Velopack Setup/full nupkg missing' }
-          Copy-Item $setup.FullName "$primary/Beam-Velopack-Setup.exe"
-          Copy-Item $nupkg.FullName "$primary/Beam-full.nupkg"
-      - name: Build genuine TurkuazInstaller Community bootstrapper and companion binaries
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $upstream = Join-Path (Get-Location).Path 'build/turkuaz-upstream'
-          $publish = Join-Path (Get-Location).Path 'build/turkuaz-unsigned'
-          $parts = @(
-            @('bootstrap', 'src/TurkuazInstaller.Bootstrapper/TurkuazInstaller.Bootstrapper.csproj'),
-            @('winui', 'src/TurkuazInstaller.WinUI/TurkuazInstaller.WinUI.csproj'),
-            @('cli', 'src/TurkuazInstaller.Cli/TurkuazInstaller.Cli.csproj')
-          )
-          foreach ($part in $parts) {
-            dotnet publish (Join-Path $upstream $part[1]) --configuration Release --runtime win-x64 --self-contained true --output (Join-Path $publish $part[0])
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $root = (Get-Location).Path
+          $stage = Join-Path $root 'build/rust-primary/payload'
+          $output = Join-Path $root 'build/rust-primary/expected-Beam.tzpkg'
+          $manifest = Join-Path $root 'build/rust-primary/expected-release.yaml'
+          $cli = Join-Path $root 'build/rust-primary/turkuaz-cli-headless.exe'
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item target/release/beam-patcher.exe (Join-Path $stage 'beam-patcher.exe')
+          Copy-Item installer/windows/config.qa.yml (Join-Path $stage 'config.yml')
+          Copy-Item installer/windows/README-QA.txt (Join-Path $stage 'README-QA.txt')
+          if (Test-Path -LiteralPath 'beam-ui/public/assets' -PathType Container) {
+            Copy-Item -LiteralPath 'beam-ui/public/assets' -Destination (Join-Path $stage 'assets') -Recurse
           }
-          $joined = Join-Path (Get-Location).Path 'build/turkuaz-unsigned/combined'
-          & (Join-Path $upstream 'tools/New-CombinedDistribution.ps1') -BootstrapRoot (Join-Path $publish 'bootstrap') -WinUiRoot (Join-Path $publish 'winui') -CliRoot (Join-Path $publish 'cli') -OutputRoot $joined
+          if (-not [IO.File]::ReadAllText((Join-Path $stage 'config.yml')).Contains('qa_only: true')) { throw 'Release candidate must use QA-only Beam config' }
+          $pinned = (git -C build/turkuaz-rust rev-parse HEAD).Trim()
+          if ($pinned -cne '456a34679661978afc717cc5b08ece11cb0b9a94') { throw 'Rust source checkout revision mismatch' }
+          & $cli build-package --package-id levelupgt.beampatcher.qa --version 1.0.1 --source $stage --output $output --executable beam-patcher.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $primary = Join-Path (Get-Location).Path 'build/turkuaz-primary/primary'
-          Copy-Item -LiteralPath (Join-Path $joined 'TurkuazInstaller.Bootstrapper.exe') -Destination $primary
-          Copy-Item -LiteralPath (Join-Path $joined 'app') -Destination (Join-Path $primary 'app') -Recurse
-          Copy-Item -LiteralPath (Join-Path $joined 'cli') -Destination (Join-Path $primary 'cli') -Recurse
-      - name: Verify trusted Turkuaz signing, detached manifest and native E2E proof
+          $uri = ([Uri]::new([IO.Path]::GetFullPath($output))).AbsoluteUri
+          & $cli describe-package --package-id levelupgt.beampatcher.qa --version 1.0.1 --channel beta --package $output --uri $uri --target (Join-Path $env:RUNNER_TEMP 'beam-rust-target') --output $manifest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/check_rust_installer_candidate.py --package $output --manifest $manifest --payload $stage --upstream-sha $pinned --package-id levelupgt.beampatcher.qa --version 1.0.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Require independent externally signed Rust primary and evidence
         shell: pwsh
         env:
-          VERIFIED_SIGNED_BUNDLE: ${{ vars.BEAM_VERIFIED_TURKUAZ_BUNDLE }}
+          VERIFIED_SIGNED_RUST_BUNDLE: ${{ vars.BEAM_VERIFIED_RUST_TURKUAZ_BUNDLE }}
         run: |
           $ErrorActionPreference = 'Stop'
-          # The signed bundle is produced/provisioned separately, in a protected
-          # Windows signing environment. A missing or unverifiable bundle is FAIL.
-          $trusted = $env:VERIFIED_SIGNED_BUNDLE
+          $trusted = $env:VERIFIED_SIGNED_RUST_BUNDLE
           if ([string]::IsNullOrWhiteSpace($trusted) -or -not (Test-Path -LiteralPath $trusted -PathType Container)) {
-            throw 'TURKUAZ-ONLY-001: NO TRUSTED TURKUAZ SIGNER / E2E BUNDLE. Primary is NOT shareable.'
+            throw 'TURKUAZ-RUST-ONLY: real signed Rust bundle/acceptance missing; upload blocked'
           }
-          $primary = Join-Path (Get-Location).Path 'build/turkuaz-primary/primary'
-          foreach ($item in @('installer-manifest.yml', 'installer-manifest.yml.p7s', 'manifest-trust.yml', 'turkuaz-primary-e2e.json')) {
-            $src = Join-Path $trusted $item
-            if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { throw "Required signed evidence missing: $item" }
-            Copy-Item -LiteralPath $src -Destination (Join-Path $primary $item)
+          $root = (Get-Location).Path
+          $primary = Join-Path $root 'build/turkuaz-primary/primary'
+          New-Item -ItemType Directory -Path $primary -Force | Out-Null
+          foreach ($name in @('TurkuazSetup.exe','Beam.tzpkg','Beam.tzsetup','release.yaml','release.p7s','manifest-trust.yaml','turkuaz-primary-e2e.json')) {
+            $source = Join-Path $trusted $name
+            if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing protected Rust release input: $name" }
+            if (((Get-Item -LiteralPath $source).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+              throw "Linked protected Rust release input: $name"
+            }
+            $dest = if ($name -eq 'turkuaz-primary-e2e.json') {
+              Join-Path $root 'build/rust-primary/turkuaz-primary-e2e.json'
+            } else { Join-Path $primary $name }
+            Copy-Item -LiteralPath $source -Destination $dest
           }
-          # The protected signing job must provide the entire signed
-          # Turkuaz combined distribution; unsigned source build never passes.
-          foreach ($rel in @('TurkuazInstaller.Bootstrapper.exe','app/TurkuazInstaller.WinUI.exe','cli/TurkuazInstaller.Cli.exe')) {
-            $signedExe = Join-Path $trusted $rel
-            if (-not (Test-Path -LiteralPath $signedExe -PathType Leaf)) { throw "Signed Turkuaz runtime missing: $rel" }
-            Copy-Item -LiteralPath $signedExe -Destination (Join-Path $primary $rel) -Force
-          }
-          $pin = "${{ vars.BEAM_TURKUAZ_CERT_SHA256 }}"
-          $publisher = "${{ vars.BEAM_TURKUAZ_PUBLISHER_SUBJECT }}"
-          & ./tools/Confirm-TurkuazTrust.ps1 -PrimaryDirectory $primary -PublisherSubject $publisher -CertificateSha256 $pin
-          if ($LASTEXITCODE -ne 0) { throw 'Real CMS/Authenticode trust verification failed' }
-          # A signed-provenance E2E run must be validated in addition to
-          # this cryptographic check; JSON cannot alone approve a release.
-          $evidence = Join-Path $trusted 'turkuaz-primary-e2e.json'
-          Copy-Item -LiteralPath $evidence -Destination (Join-Path (Get-Location).Path 'build/turkuaz-evidence.json')
-      - name: Fail-closed single Turkuaz primary hash and native E2E gate
+      - name: Validate exact Rust source, bundle/manifest binding and trusted publisher
+        shell: pwsh
+        env:
+          PUBLISHER_PIN: ${{ vars.BEAM_TURKUAZ_CERT_SHA256 }}
+          PUBLISHER_SUBJECT: ${{ vars.BEAM_TURKUAZ_PUBLISHER_SUBJECT }}
+        run: |
+          $root = (Get-Location).Path
+          $primary = Join-Path $root 'build/turkuaz-primary/primary'
+          $expected = Join-Path $root 'build/rust-primary/expected-Beam.tzpkg'
+          python tools/verify_installer_primary.py --bundle build/turkuaz-primary --evidence build/rust-primary/turkuaz-primary-e2e.json --source-sha "${{ github.sha }}" --version 1.0.1 --expected-package $expected --report build/rust-primary/distribution-report.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./tools/Confirm-TurkuazTrust.ps1 -PrimaryDirectory $primary -PublisherSubject $env:PUBLISHER_SUBJECT -CertificateSha256 $env:PUBLISHER_PIN
+          if (-not $?) { throw 'Rust Authenticode/CMS trust verification failed' }
+      - name: Real signed Rust setup temporary install and uninstall
         shell: pwsh
         run: |
-          python tools/verify_installer_primary.py --bundle build/turkuaz-primary --evidence build/turkuaz-evidence.json --source-sha "${{ github.sha }}" --version 1.0.1 --report build/turkuaz-primary/primary/distribution-report.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Upload only the verified TurkuazInstaller primary
+          $root = (Get-Location).Path
+          & ./tools/Test-BeamRustProtectedPrimary.ps1 -SetupPath (Join-Path $root 'build/turkuaz-primary/primary/TurkuazSetup.exe') -CliPath (Join-Path $root 'build/rust-primary/turkuaz-cli-headless.exe') -TrustPath (Join-Path $root 'build/turkuaz-primary/primary/manifest-trust.yaml') -BeamExePath (Join-Path $root 'target/release/beam-patcher.exe') -PackageId 'levelupgt.beampatcher.qa' -Version '1.0.1'
+          if (-not $?) { throw 'Real signed Rust setup native install smoke failed' }
+      - name: Upload verified primary TurkuazSetup and its public trust report ONLY
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: TURKUAZ-PRIMARY-BEAM-QA-${{ github.sha }}
-          path: build/turkuaz-primary/primary/
+          name: RUST-TURKUAZ-PRIMARY-BEAM-QA-${{ github.sha }}
+          path: |
+            build/turkuaz-primary/primary/TurkuazSetup.exe
+            build/turkuaz-primary/primary/manifest-trust.yaml
+            build/rust-primary/distribution-report.json
           if-no-files-found: error
           retention-days: 3

@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/RUST-INSTALLER-BEAM-COMPAT.md
 Amac: Beam icin Rust TurkuazInstaller tek-primary uyumluluk ve kabul sinirlari
 Modul - Markdown / Rust Windows QA
-Version: 1.4.0-candidate
+Version: 2.0.0-candidate
 Aciklama: Gercek Beam QA, tek TurkuazSetup; product signer/release ayri
 Bagimli Oldugu Katman: tools/Test-BeamRustEphemeralLifecycle.ps1 | tools/check_rust_installer_candidate.py
 -->
@@ -13,8 +13,8 @@ Bagimli Oldugu Katman: tools/Test-BeamRustEphemeralLifecycle.ps1 | tools/check_r
 
 Rust upstream revision is pinned to
 456a34679661978afc717cc5b08ece11cb0b9a94.
-The legacy Turkuaz product gate uses a different .NET revision
-and Velopack; never assume a cross-format upgrade is automatic.
+The protected product gate now uses this same pinned Rust source,
+but real publisher signing and native acceptance remain separate.
 
 ## What real hosted-Windows CI tests
 
@@ -57,10 +57,11 @@ shortcuts, registry, user-consented migration from earlier installs,
 Unicode/space paths and cancellation/failed-install recovery.
 Passing the ephemeral signing fixture does not satisfy these.
 
-Current protected Turkuaz primary workflow still validates a
-legacy-compatible .NET distribution; migration to the Rust primary
-needs separate reviewed production signing and rollout acceptance.
-The retired secondary installer is not a release dependency.
+The protected primary workflow now builds Rust Beam packages, requires
+the same exact signed .tzpkg inside .tzsetup, validates the single
+TurkuazSetup.exe publisher chain, and executes hosted Windows
+install-self/verify/uninstall. Real Windows 10/11 GUI and user-consented
+migration acceptance are still required. No secondary installer is built.
 
 Run the synthetic offline tests:
 

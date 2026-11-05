@@ -1,104 +1,83 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamTrustNegative.ps1
-# Amac: Gercek signer gerektirmeyen CMS preflight ve Setup identity negatif testleri
-# Modul - PowerShell / Windows offline security QA
-# Version: 1.0.0-candidate
-# Aciklama: Sentetik fixture ile manifest/size/hash/identity red; Authenticode PASS iddiasi yok
-# Bagimli Oldugu Katman: tools/Confirm-TurkuazTrust.ps1 | tools/Assert-BeamManifestSetupBinding.ps1
-
+# Amac: Rust tek-primary CMS ve Windows publisher trust negatif regresyonlari
+# Modul - PowerShell / Hosted Windows security preflight
+# Version: 3.0.0-candidate
+# Aciklama: Test signer disinda secret gerektirmez; gercek urun imzasini PASS saymaz
+# Bagimli Oldugu Katman: tools/Confirm-TurkuazTrust.ps1 | tools/verify_installer_primary.py
 [CmdletBinding()]
 param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $Verifier = Join-Path $PSScriptRoot 'Confirm-TurkuazTrust.ps1'
-$Binding = Join-Path $PSScriptRoot 'Assert-BeamManifestSetupBinding.ps1'
-$Root = Join-Path ([IO.Path]::GetTempPath()) ('beam-trust-qa-' + [Guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path $Root -Force | Out-Null
+$Root = Join-Path ([IO.Path]::GetTempPath()) ('beam-rust-trust-negative-' + [Guid]::NewGuid().ToString('N'))
 $Primary = Join-Path $Root 'primary'
-New-Item -ItemType Directory -Path $Primary -Force | Out-Null
-$Manifest = Join-Path $Primary 'installer-manifest.yml'
-$Signature = Join-Path $Primary 'installer-manifest.yml.p7s'
-$Trust = Join-Path $Primary 'manifest-trust.yml'
-$Setup = Join-Path $Primary 'Beam-Velopack-Setup.exe'
-$PackageId = 'levelupgt.beampatcher.qa'
-$Version = '1.0.1'
+$Manifest = Join-Path $Primary 'release.yaml'
+$Signature = Join-Path $Primary 'release.p7s'
+$Trust = Join-Path $Primary 'manifest-trust.yaml'
+$Setup = Join-Path $Primary 'TurkuazSetup.exe'
+$Package = Join-Path $Primary 'Beam.tzpkg'
+$Bundle = Join-Path $Primary 'Beam.tzsetup'
 $Pin = 'a' * 64
-
-function Write-Manifest([string]$Value) {
-    [IO.File]::WriteAllText($Manifest, $Value, [Text.UTF8Encoding]::new($false))
-}
-function Assert-Rejection([string]$Case, [string]$Expected, [scriptblock]$Action) {
-    $Message = ''
-    try { & $Action | Out-Null } catch { $Message = $_.Exception.Message }
-    if ($Message -notmatch [regex]::Escape($Expected)) {
-        throw "Negative case [$Case] was not rejected as expected: $Message"
+$Publisher = 'CN=Beam Rust CI Structural Fixture'
+$Utf8 = [Text.UTF8Encoding]::new($false)
+function Assert-Reject([string]$Case, [string]$Expected, [scriptblock]$Action) {
+    $message = ''
+    try { & $Action | Out-Null } catch { $message = $_.Exception.Message }
+    if (-not $message.Contains($Expected)) {
+        throw "Rust trust negative [$Case] failed: $message"
     }
 }
-function Test-Identity {
-    & $Binding -ManifestPath $Manifest -SetupPath $Setup -PackageId $PackageId -Version $Version | Out-Null
+function Verify-Candidate {
+    & $Verifier -PrimaryDirectory $Primary -PublisherSubject $Publisher -CertificateSha256 $Pin | Out-Null
 }
-function Test-SignerPreflight {
-    & $Verifier -PrimaryDirectory $Primary -PublisherSubject 'CN=QA Structural Fixture' -CertificateSha256 $Pin | Out-Null
-}
-
 try {
-    [IO.File]::WriteAllBytes($Setup, [Text.Encoding]::ASCII.GetBytes(('BEAM-QA-SETUP-SYNTHETIC' * 40)))
-    $Sha = (Get-FileHash -LiteralPath $Setup -Algorithm SHA256).Hash.ToLowerInvariant()
-    $Length = (Get-Item -LiteralPath $Setup).Length
-    $Template = @"
-schema_version: 1
-package:
-  id: "$PackageId"
-  version: "$Version"
-  channel: beta
-artifact:
-  uri: "file:///TEST-ONLY-setup.exe"
-  sha256: "$Sha"
-  size_bytes: $Length
-install:
-  mode: full
-"@
-    Write-Manifest $Template
-    Test-Identity
+    New-Item -ItemType Directory -Force -Path $Primary | Out-Null
+    [IO.File]::WriteAllText($Manifest, 'schema_version: 1' + [Environment]::NewLine, $Utf8)
+    [IO.File]::WriteAllBytes($Signature, [byte[]](1,2,3,4))
+    [IO.File]::WriteAllText($Trust, 'test-no-production-trust', $Utf8)
+    [IO.File]::WriteAllBytes($Setup, [Text.Encoding]::ASCII.GetBytes('MZ' + ('test-only' * 200)))
+    [IO.File]::WriteAllBytes($Bundle, [Text.Encoding]::ASCII.GetBytes('test-tzsetup' * 80))
+    [IO.File]::WriteAllBytes($Package, [Text.Encoding]::ASCII.GetBytes('test-tzpkg' * 80))
+    Assert-Reject 'untrusted unsigned EXE' 'Authenticode not trusted' { Verify-Candidate }
+    Assert-Reject 'invalid independent publisher cert pin' 'SHA256 cert pin required' {
+        & $Verifier -PrimaryDirectory $Primary -PublisherSubject $Publisher -CertificateSha256 'oops'
+    }
+    [IO.File]::WriteAllText($Manifest, ('m' * 1048577), $Utf8)
+    Assert-Reject 'Rust manifest size cap' 'size limit exceeded' { Verify-Candidate }
+    [IO.File]::WriteAllText($Manifest, 'schema_version: 1', $Utf8)
+    [IO.File]::WriteAllText($Signature, ('s' * 262145), $Utf8)
+    Assert-Reject 'Rust CMS size cap' 'size limit exceeded' { Verify-Candidate }
+    [IO.File]::WriteAllBytes($Signature, [byte[]](1,2,3,4))
+    [IO.File]::WriteAllText($Trust, ('t' * 65537), $Utf8)
+    Assert-Reject 'external publisher policy size cap' 'size limit exceeded' { Verify-Candidate }
+    [IO.File]::WriteAllText($Trust, 'test-no-production-trust', $Utf8)
+    Remove-Item -LiteralPath $Package
+    Assert-Reject 'missing Rust tzpkg' 'Missing Rust release input' { Verify-Candidate }
+    [IO.File]::WriteAllBytes($Package, [Text.Encoding]::ASCII.GetBytes('test-tzpkg' * 80))
 
-    Write-Manifest ($Template.Replace($Sha, ('f' * 64)))
-    Assert-Rejection 'wrong SHA' 'SHA-256/size mismatch' { Test-Identity }
-
-    Write-Manifest ($Template.Replace("size_bytes: $Length", "size_bytes: $($Length + 1)"))
-    Assert-Rejection 'wrong byte count' 'SHA-256/size mismatch' { Test-Identity }
-
-    Write-Manifest ($Template.Replace("id: ""$PackageId""", 'id: "other-application"'))
-    Assert-Rejection 'wrong package' 'identity or schema mismatch' { Test-Identity }
-
-    Write-Manifest ($Template + [Environment]::NewLine + 'package:' + [Environment]::NewLine + '  id: evil')
-    Assert-Rejection 'duplicate package block' 'Duplicate signed manifest section' { Test-Identity }
-
-    # A real hash in an unrelated comment must not rescue a fake
-    # artifact.sha256 from the signed structure.
-    Write-Manifest ('# ' + $Sha + [Environment]::NewLine + $Template.Replace($Sha, ('f' * 64)))
-    Assert-Rejection 'unrelated hash comment' 'SHA-256/size mismatch' { Test-Identity }
-
-    Write-Manifest $Template
-    $Original = [IO.File]::ReadAllBytes($Setup)
-    [IO.File]::WriteAllBytes($Setup, [Text.Encoding]::ASCII.GetBytes('tampered-synthetic-setup'))
-    Assert-Rejection 'tampered actual setup bytes' 'SHA-256/size mismatch' { Test-Identity }
-    [IO.File]::WriteAllBytes($Setup, $Original)
-    Test-Identity
-
-    # Refuse oversized metadata before signer and Authenticode checks.
-    [IO.File]::WriteAllText($Signature, 'fake-cms')
-    [IO.File]::WriteAllText($Trust, 'fake-external-trust')
-    Write-Manifest ('x' * 1048577)
-    Assert-Rejection 'manifest cap' 'size limit exceeded' { Test-SignerPreflight }
-
-    Write-Manifest $Template
-    [IO.File]::WriteAllText($Signature, ('x' * 262145))
-    Assert-Rejection 'CMS cap' 'size limit exceeded' { Test-SignerPreflight }
-
-    [IO.File]::WriteAllText($Signature, 'fake-cms')
-    [IO.File]::WriteAllText($Trust, ('x' * 65537))
-    Assert-Rejection 'external trust cap' 'size limit exceeded' { Test-SignerPreflight }
-
-    Write-Output 'BEAM_OFFLINE_TRUST_NEGATIVE_FIXTURES_PASS (NOT SIGNED E2E)'
+    # A detached signature must reject even a one-byte change in the
+    # exact signed manifest, independently of OS publisher trust.
+    Add-Type -AssemblyName System.Security.Cryptography.Pkcs
+    $content = [Security.Cryptography.Pkcs.ContentInfo]::new(
+        [Text.Encoding]::UTF8.GetBytes('signed-message')
+    )
+    $cert = New-SelfSignedCertificate -Subject $Publisher -CertStoreLocation 'Cert:\CurrentUser\My' -Type CodeSigningCert -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -NotAfter (Get-Date).AddDays(1)
+    try {
+        $cms = [Security.Cryptography.Pkcs.SignedCms]::new($content, $true)
+        $cms.ComputeSignature([Security.Cryptography.Pkcs.CmsSigner]::new($cert))
+        $verified = [Security.Cryptography.Pkcs.SignedCms]::new($content, $true)
+        $verified.Decode($cms.Encode())
+        $verified.CheckSignature($true)
+        $tampered = [Security.Cryptography.Pkcs.SignedCms]::new(
+            [Security.Cryptography.Pkcs.ContentInfo]::new([Text.Encoding]::UTF8.GetBytes('tampered-message')),
+            $true
+        )
+        $tampered.Decode($cms.Encode())
+        Assert-Reject 'detached CMS byte tamper' 'signature' { $tampered.CheckSignature($true) }
+    } finally {
+        Remove-Item -LiteralPath ('Cert:\CurrentUser\My\' + $cert.Thumbprint) -Force -ErrorAction SilentlyContinue
+    }
+    Write-Output 'BEAM_RUST_TRUST_NEGATIVE_FIXTURES_PASS_NOT_PRODUCT_SIGNING'
 } finally {
     Remove-Item -LiteralPath $Root -Recurse -Force -ErrorAction SilentlyContinue
 }

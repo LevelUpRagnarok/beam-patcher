@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/INSTALLER-STRATEGY-TURKUAZ.md
 Amac: BeamPatcher tek TurkuazInstaller Windows dagitim ve guvenlik politikasini tanimlar
 Modul - Markdown / Installer Policy
-Version: 2.1.0-candidate
+Version: 3.0.0-candidate
 Aciklama: Ikinci kurulum kaldirildi; imzasiz/test-signed dagitim yasaktir
 Bagimli Oldugu Katman: AGENTS.md | tools/verify_installer_primary.py
 -->
@@ -33,23 +33,34 @@ test-signs it with Authenticode and uses its CLI install-self path.
 The GUI wizard and actual game client are **not** executed.
 No test EXE is uploaded or distributed.
 
-**Beam TurkuazInstaller Primary Only** performs contract and Windows
+**Beam Rust TurkuazInstaller Primary Only** performs contract and Windows
 security negatives on PR. Its protected product job requires manual
 workflow_dispatch and signing-environment authorization, signed
 manifest/CMS, an independently provisioned publisher certificate
 and successful native Windows acceptance. Missing real trust or
 E2E evidence must fail closed; no standalone artifact is shareable.
 
-## Current source generations
+## Single pinned Rust installer upstream
 
-The protected legacy-compatible primary workflow still builds the
-pinned **.NET TurkuazInstaller + Velopack** distribution from revision
-1048931bf7498ab4d4440414c4463e6ee5e7421e.
-The separate **Rust** integration uses upstream revision
-456a34679661978afc717cc5b08ece11cb0b9a94 and the Rust
-.tzpkg / .tzsetup formats. A successful Rust QA test does not prove
-that the new Rust format has real publisher-signed production E2E.
-Never mix the two formats or silently update pinned source revisions.
+The protected workflow uses only Rust TurkuazInstaller from pinned SHA
+`456a34679661978afc717cc5b08ece11cb0b9a94`.
+The single user-facing output is `TurkuazSetup.exe`. Rust
+`.tzpkg`/`.tzsetup`, `release.yaml`, `release.p7s` and public
+`manifest-trust.yaml` are verified package inputs, not extra installers.
+
+Manual protected `windows-installer-signing` requires independently
+supplied signed Rust files and `turkuaz-primary-e2e.json` native
+acceptance evidence through `BEAM_VERIFIED_RUST_TURKUAZ_BUNDLE`.
+The publisher subject and SHA-256 pin come from protected variables
+`BEAM_TURKUAZ_PUBLISHER_SUBJECT` and `BEAM_TURKUAZ_CERT_SHA256`.
+The exact signed release package bytes must match the freshly compiled
+Beam Rust package; a bounded ZIP layout, manifest identity, detached
+CMS, Authenticode and hosted Windows install/uninstall are independently
+verified. Windows 10/11 GUI and migration approvals must also be present
+in external native acceptance evidence. Otherwise upload is prohibited.
+
+No legacy installer runtime, secondary setup, public signer key or
+automatic release remains in this active product workflow.
 
 ## Required product acceptance
 
