@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/check_installer_workflows.py
 # Amac: BURAK-INS-001 bypass eden Inno/NSIS tekli setup uploadlarini reddetmek
 # Modul - Python / CI static policy checker
-# Version: 1.0.1-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Tum github workflows ve installer source yapisi uzerinde fail-closed disiplini
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | .github/workflows
 
@@ -19,6 +19,8 @@ REQUIRED = (
     "tools/verify_installer_pair.py",
     "tools/check_installer_workflows.py",
     "tools/Confirm-TurkuazTrust.ps1",
+    "tools/Assert-BeamManifestSetupBinding.ps1",
+    "tools/Test-BeamTrustNegative.ps1",
     "docs/INSTALLER-STRATEGY-TURKUAZ.md",
     "docs/WINDOWS-SETUP-PATCH-QA.md",
 )

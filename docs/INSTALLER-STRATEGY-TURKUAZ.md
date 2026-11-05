@@ -2,7 +2,7 @@
 Dosya Yolu: docs/INSTALLER-STRATEGY-TURKUAZ.md
 Amac: Beam QA paketlemesinden TurkuazInstaller'a guvenli gecis plani ve kabul sinirlari
 Modul - Markdown documentation
-Version: 0.2.1-candidate
+Version: 0.3.0-candidate
 Aciklama: Inno/NSIS tekli dagitimi yasak; Turkuaz signed primary gate tamamlanmadan paylasim yok
 Bagimli Oldugu Katman: installer/windows/BeamPatcher-QA.iss | TurkuazLabs/TurkuazInstaller/docs/PROJECT_INTEGRATION.md
 -->
@@ -66,6 +66,29 @@ redistributed as a signed product installer.
   It installs only QA launcher/config and preserves the user's config.
 - Pinned upstream Turkuaz source commit:
   `1048931bf7498ab4d4440414c4463e6ee5e7421e` (Community).
+
+
+## Signed initial Setup binding and offline trust regressions - 2026-11-05
+
+The protected Windows gate now requires two independent CI jobs before
+signed TurkuazInstaller publication: the source/policy contract and
+Windows synthetic negative tests in tools/Test-BeamTrustNegative.ps1.
+
+tools/Confirm-TurkuazTrust.ps1 validates bounded CMS metadata,
+Windows trusted certificate chain, pinned signer SHA-256/publisher and
+certificate validity dates. Only **after** checking the detached CMS,
+tools/Assert-BeamManifestSetupBinding.ps1 matches signed Stable v1
+package.id, package.version, artifact.sha256 and artifact.size_bytes
+to the **actual initial Velopack Setup.exe**. A digest existing only
+in an unrelated comment, or belonging to a full nupkg instead of Setup,
+is refused for initial-install approval. Full nupkg is bound by the
+separate pair/evidence gate and native update/repair/rollback E2E.
+
+The Windows negative fixture suite contains **no production signer**:
+its parsing, tamper and metadata-size tests do not prove a signed
+Turkuaz product. The protected build-both-and-gate still needs an
+explicit dispatch, independently provisioned real signing/trust and
+native product acceptance. A green PR/negative test is NOT a release.
 
 ## Required work before switching Beam installers
 

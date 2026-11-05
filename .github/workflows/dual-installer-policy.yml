@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/.github/workflows/dual-installer-policy.yml
 # Amac: BURAK-INS-001 Turkuaz primary ve NSIS private fallback'u tek run'da uretme/gate
 # Modul - GitHub Actions / Windows dual installer
-# Version: 1.0.1-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Imza/trust/urun E2E olmadan artifact paylasmaz; Inno ve tekli NSIS yok
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | TurkuazLabs/TurkuazInstaller
 
@@ -13,6 +13,9 @@ on:
       - "installer/windows/**"
       - "tools/verify_installer_pair.py"
       - "tools/check_installer_workflows.py"
+      - "tools/Confirm-TurkuazTrust.ps1"
+      - "tools/Assert-BeamManifestSetupBinding.ps1"
+      - "tools/Test-BeamTrustNegative.ps1"
       - ".github/workflows/**"
       - "docs/INSTALLER-STRATEGY-TURKUAZ.md"
       - "docs/WINDOWS-SETUP-PATCH-QA.md"
@@ -38,12 +41,27 @@ jobs:
       - name: Test installer proof gate negative cases
         run: python -m unittest discover -s tools/tests -p 'test_installer_distribution_policy.py' -v
 
+  # No release/signing credentials. Exercise real PowerShell negative paths
+  # on Windows so a broken trust parser blocks protected distribution.
+  trust-negative-fixtures:
+    name: Windows no-secret manifest and CMS preflight negatives
+    runs-on: windows-latest
+    needs: policy-contract
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Reject tampered setup, bad manifest identity and oversized CMS
+        shell: pwsh
+        run: ./tools/Test-BeamTrustNegative.ps1
+
   # Explicitly dispatched only. A PR does NOT produce/share a setup file.
   # A signed Turkuaz product bundle MUST come from a separately secured signing
   # and real installer acceptance process. Missing materials -> fail closed.
   build-both-and-gate:
     if: github.event_name == 'workflow_dispatch'
-    needs: policy-contract
+    needs: [policy-contract, trust-negative-fixtures]
     runs-on: windows-latest
     timeout-minutes: 120
     environment: windows-installer-signing

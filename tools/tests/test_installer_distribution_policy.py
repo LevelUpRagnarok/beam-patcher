@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: BURAK-INS-001 primary ve backup dagitim bypass negatif regresyonlari
 # Modul - Python unittest
-# Version: 1.0.2-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Degisen manifest, eksik sidecar, farkli SHA, yanlış rol ve standalone upload reddi
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | tools/check_installer_workflows.py
 
@@ -106,6 +106,8 @@ class InstallerDistributionContractTests(unittest.TestCase):
                         "tools/verify_installer_pair.py",
                         "tools/check_installer_workflows.py",
                         "tools/Confirm-TurkuazTrust.ps1",
+                        "tools/Assert-BeamManifestSetupBinding.ps1",
+                        "tools/Test-BeamTrustNegative.ps1",
                         "docs/INSTALLER-STRATEGY-TURKUAZ.md",
                         "docs/WINDOWS-SETUP-PATCH-QA.md"):
                 file = root / rel
@@ -139,6 +141,33 @@ class InstallerDistributionContractTests(unittest.TestCase):
         self.assertNotIn('Delete "$INSTDIR\\config.yml"', nsis)
         self.assertIn("No standalone installer publication without Turkuaz dual gate", workflow)
 
+    def test_protected_windows_trust_gate_has_real_negative_tests(self):
+        workflow = (ROOT / ".github/workflows/dual-installer-policy.yml").read_text(
+            encoding="utf-8"
+        )
+        signer = (ROOT / "tools/Confirm-TurkuazTrust.ps1").read_text(
+            encoding="utf-8"
+        )
+        binding = (ROOT / "tools/Assert-BeamManifestSetupBinding.ps1").read_text(
+            encoding="utf-8"
+        )
+        negative = (ROOT / "tools/Test-BeamTrustNegative.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("trust-negative-fixtures:", workflow)
+        self.assertIn("needs: [policy-contract, trust-negative-fixtures]", workflow)
+        self.assertIn("Test-BeamTrustNegative.ps1", workflow)
+        self.assertIn("$Cms.CheckSignature($false)", signer)
+        self.assertIn("outside its validity period", signer)
+        self.assertIn("Assert-BeamManifestSetupBinding.ps1", signer)
+        self.assertIn("1048576", signer)
+        self.assertIn("262144", signer)
+        self.assertIn("artifact.sha256", binding)
+        self.assertIn("artifact.size_bytes", binding)
+        self.assertIn("Signed initial Velopack Setup artifact SHA-256/size mismatch", binding)
+        self.assertNotIn("$HashOfNupkg", signer)
+        self.assertIn("BEAM_OFFLINE_TRUST_NEGATIVE_FIXTURES_PASS", negative)
+
     def test_retired_standalone_setup_guide_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix="test-policy-docs-") as tmp:
             root = Path(tmp)
@@ -146,6 +175,8 @@ class InstallerDistributionContractTests(unittest.TestCase):
                         "tools/verify_installer_pair.py",
                         "tools/check_installer_workflows.py",
                         "tools/Confirm-TurkuazTrust.ps1",
+                        "tools/Assert-BeamManifestSetupBinding.ps1",
+                        "tools/Test-BeamTrustNegative.ps1",
                         "docs/INSTALLER-STRATEGY-TURKUAZ.md",
                         "docs/WINDOWS-SETUP-PATCH-QA.md"):
                 file = root / rel
