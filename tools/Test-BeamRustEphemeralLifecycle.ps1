@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamRustEphemeralLifecycle.ps1
 # Amac: Beam QA Rust lifecycle ve tek Turkuaz Windows primary setup testi
 # Modul - PowerShell Integration QA
-# Version: 1.2.0-candidate
+# Version: 1.2.1-candidate
 # Aciklama: Gecici CI sertifikasi, gercek Beam EXE, signed bundle; production imzasi degil
 # Bagimli Oldugu Katman: .github/workflows/rust-installer-beam-compat.yml | TurkuazInstaller/rust/CLI.md
 [CmdletBinding()]
@@ -108,7 +108,9 @@ function Find-TestSignTool {
 function Sign-And-CheckTestExecutable {
     param([string]$Path, [string]$Label, [string]$SignToolPath)
     $before = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
-    & $SignToolPath sign /fd SHA256 /sha1 $Certificate.Thumbprint /s My $Path
+    # Native stdout is diagnostic, not the primary EXE return value.
+    # Do not leak signtool success text into Assert-TurkuazPrimary output.
+    & $SignToolPath sign /fd SHA256 /sha1 $Certificate.Thumbprint /s My $Path | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Ephemeral Authenticode signing failed for $Label" }
     $signed = Get-AuthenticodeSignature -LiteralPath $Path
     $status = [string]$signed.Status
@@ -215,6 +217,9 @@ try {
         [IO.File]::ReadAllText($sentinel) -cne 'preserve-me') { throw 'Unmanaged user file changed' }
     # Exercise the primary self-extractor CLI, not a GUI wizard or client.
     $primary = Assert-TurkuazPrimary -Bundle $v2.Bundle -Manifest $v2.Manifest -Signature $v2.Signature -Package $v2.Package
+    if ($primary -isnot [string] -or -not (Test-Path -LiteralPath $primary -PathType Leaf)) {
+        throw 'Turkuaz primary builder returned unexpected stdout instead of one EXE path'
+    }
     $primaryOutput = & $primary install-self --package-id $PackageId --trust-store $Trust --target $Target --data-root $State --operation install 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Turkuaz single setup self-extractor failed: $($primaryOutput -join ' ')"

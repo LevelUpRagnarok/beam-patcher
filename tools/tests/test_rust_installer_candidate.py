@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_rust_installer_candidate.py
 # Amac: Rust TurkuazInstaller onizleme ZIP/manifest sozlesmesinde fail-closed testleri
 # Modul - Python unittest
-# Version: 1.3.0-candidate
+# Version: 1.3.1-candidate
 # Aciklama: Sentetik .tzpkg pozitif/negatif fixture; imza veya gercek Windows install testi degil
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py
 
@@ -172,6 +172,9 @@ class RustCandidateContractTests(unittest.TestCase):
         self.assertNotIn("TurkuazInstallerBackup.exe", fixture)
         self.assertIn("Sign-And-CheckTestExecutable", fixture)
         self.assertIn("Get-AuthenticodeSignature", fixture)
+        self.assertIn("$SignToolPath sign /fd SHA256", fixture)
+        self.assertIn("$Path | Out-Null", fixture)
+        self.assertIn("Turkuaz primary builder returned unexpected stdout", fixture)
         self.assertIn("Reject mismatched Turkuaz publisher pin", fixture)
         self.assertIn("install-self --package-id", fixture)
         self.assertIn("TURKUAZ_PRIMARY_PASS_NO_UPLOAD", fixture)
