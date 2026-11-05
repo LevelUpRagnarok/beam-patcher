@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/WINDOWS-SETUP-PATCH-QA.md
 Amac: Beam Windows QA test adimlarini ve imzali kurulum dagitim sinirini anlatmak
 Modul - Markdown deployment/testing guide
-Version: 0.3.0-candidate
+Version: 0.3.1-candidate
 Aciklama: BURAK-INS-001 tekli Inno ve NSIS kurulum dagitimini reddeder
 Bagimli Oldugu Katman: .github/workflows/windows-setup-patch-qa.yml | .github/workflows/dual-installer-policy.yml
 -->
@@ -46,7 +46,9 @@ unsigned historical test products and not the current distribution path.
    for the exact commit on the intended development PR.
 2. Check that the format/core Rust tests, Windows executable build,
    `tools/QA-PATCH-E2E.py`, installer policy check and **private**
-   NSIS install/uninstall smoke all pass. No separate setup artifact is
+   NSIS install/uninstall smoke all pass. The private NSIS smoke also
+   checks same-version reinstall, SHA-256-preserved user `config.yml`,
+   and uninstall registry cleanup. No separate setup artifact is
    expected from this workflow.
 3. Check the [dual installer policy workflow](../.github/workflows/dual-installer-policy.yml).
    Its PR contract job confirms that no standalone setup bypass exists.
@@ -79,6 +81,10 @@ The public game feed remains disabled.
 disposable GRF 0x200, applied-patch cache behavior, corrupt archive
 refusal and unsafe directory rejection. This is **not** an in-game
 Ragnarok login, map loading or patch rollback acceptance test.
+
+The same-version NSIS reinstall test is not a version-to-version upgrade,
+TurkuazInstaller primary acceptance, or an authorization to share setup.
+It runs in an isolated GitHub-hosted Windows QA environment only.
 
 ## Before a user-facing installer exists
 

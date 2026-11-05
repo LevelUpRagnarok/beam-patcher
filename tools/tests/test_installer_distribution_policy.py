@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: BURAK-INS-001 primary ve backup dagitim bypass negatif regresyonlari
 # Modul - Python unittest
-# Version: 1.0.1-candidate
+# Version: 1.0.2-candidate
 # Aciklama: Degisen manifest, eksik sidecar, farkli SHA, yanlış rol ve standalone upload reddi
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | tools/check_installer_workflows.py
 
@@ -122,6 +122,22 @@ class InstallerDistributionContractTests(unittest.TestCase):
             standalone.unlink()
             self.assertFalse(policy_errors(root))
 
+
+    def test_private_nsis_reinstall_config_preservation_smoke_is_required(self):
+        # Static CI contract only; real install/uninstall behavior is Windows QA.
+        workflow = (ROOT / ".github/workflows/windows-setup-patch-qa.yml").read_text(
+            encoding="utf-8"
+        )
+        nsis = (ROOT / "installer/windows/BeamPatcher-NSIS-Backup.nsi").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("NSIS_QA_CONFIG_PRESERVATION_SENTINEL", workflow)
+        self.assertIn("NSIS same-version reinstall overwrote user config", workflow)
+        self.assertIn("NSIS uninstall removed or changed user config", workflow)
+        self.assertIn("NSIS uninstall registry entry remains", workflow)
+        self.assertIn("SetOverwrite off", nsis)
+        self.assertNotIn('Delete "$INSTDIR\\config.yml"', nsis)
+        self.assertIn("No standalone installer publication without Turkuaz dual gate", workflow)
 
     def test_retired_standalone_setup_guide_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix="test-policy-docs-") as tmp:
