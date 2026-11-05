@@ -68,8 +68,6 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
     environment: windows-installer-signing
-    env:
-      BEAM_RUNNER_KIND: ${{ runner.environment }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -174,6 +172,8 @@ jobs:
           if (-not $?) { throw 'Rust Authenticode/CMS trust verification failed' }
       - name: Real signed Rust setup temporary install and uninstall
         shell: pwsh
+        env:
+          BEAM_RUNNER_KIND: ${{ runner.environment }}
         run: |
           $root = (Get-Location).Path
           & ./tools/Test-BeamRustProtectedPrimary.ps1 -SetupPath (Join-Path $root 'build/turkuaz-primary/primary/TurkuazSetup.exe') -CliPath (Join-Path $root 'build/rust-primary/turkuaz-cli-headless.exe') -TrustPath (Join-Path $root 'build/turkuaz-primary/primary/manifest-trust.yaml') -BeamExePath (Join-Path $root 'target/release/beam-patcher.exe') -PackageId 'levelupgt.beampatcher.qa' -Version '1.0.1'
