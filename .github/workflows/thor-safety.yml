@@ -1,7 +1,7 @@
 # File Path: /.github/workflows/thor-safety.yml
 # Purpose: Build and test THOR parsing/GRF safety patches before merge
 # Module: CI - GitHub Actions YAML
-# Version: 1.5.1
+# Version: 1.5.2
 # Description: Produce isolated SHA-verified Windows THOR tester after real-fixture acceptance
 # Dependency Layer: Tool
 
@@ -141,7 +141,10 @@ jobs:
           retention-days: 7
 
   test-thor-windows:
-    name: FURY Windows THOR installer smoke
+    name: FURY Windows THOR installer smoke (opt-in)
+    # Hosted Windows regression runs on every PR. Never queue an offline
+    # private runner unless an operator has explicitly enabled this gate.
+    if: ${{ vars.BEAM_FURY_THOR_RUNNER_ENABLED == 'true' }}
     runs-on:
       - self-hosted
       - Windows

@@ -206,7 +206,7 @@ updater:
 
 ```
 Advantages:
-✅ Fastest compression (Zstd)
+✅ Zlib compression (BEAM v1; not encrypted)
 ✅ Built-in MD5 verification
 ✅ Smallest file size
 ✅ Modern format

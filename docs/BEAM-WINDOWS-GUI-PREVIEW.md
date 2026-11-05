@@ -1,7 +1,7 @@
 <!--
-📄 Dosya Yolu: /LevelUpGT/beam-patcher/docs/BEAM-WINDOWS-GUI-PREVIEW.md
-📌 Amac: BEAM Windows onizleme paketinin guvenli yerel test talimati
-📌 Modul - Markdown
+Dosya Yolu: REPO_ROOT/docs/BEAM-WINDOWS-GUI-PREVIEW.md
+Amac: BEAM Windows onizleme paketinin guvenli yerel test talimati
+Modul - Markdown
 Version: 0.6.0
 Aciklama: Gelistiriciye ozel deney plani, kapsam sinirlari ve test kabullerini aciklar
 Bagimli Oldugu Katman: View | Language
@@ -37,7 +37,7 @@ Kaynak: `beam-preview/public/index.html`, `beam-preview/src/main.rs`, `beam-prev
 ## GitHub branch görünürlüğü (v0.2, yalnızca okuma)
 
 - İstemci profili: Eski 2015 / Yeni 2015 / 2022 Hybrid — yalnızca arayüz üzerinde görüntülenir, oyun klasörü veya patch geçmişi değiştirilmez.
-- Kaynak kod deposu: \`LevelUpGT/beam-patcher\` veya \`b1glord/ROenglishRE\`. Uygulama GitHub'ın herkese açık branches API'sini salt-okunur sorgular; en fazla 100 dal ve 12 saniye istek zaman aşımı.
+- Kaynak kod deposu: \`LevelUpRagnarok/beam-patcher\` veya \`b1glord/ROenglishRE\`. Uygulama GitHub'ın herkese açık branches API'sini salt-okunur sorgular; en fazla 100 dal ve 12 saniye istek zaman aşımı.
 - Dal seçimi: branch adı, commit SHA ve korumalı dal bilgisi gösterilir. **Git checkout, branch içeriği indirme, yerel dosya değişimi, THOR uygulaması veya kanal değiştirme yapılmaz.**
 - \`LevelUpGT/RagnarokClient\` özel depodur; kişisel token depolanmadan/uygulamaya gömülmeden bu sürümde dallarını göstermez. İleride güvenli yetkili servis üzerinden sorgulanabilir.
 - Branch isimleri kullanıcı girdisi olarak serbest GitHub URL'sine çevrilmez. Backend API yalnızca iki allowlist reposunu sorgular; erişim kimliği paylaşılmaz.
@@ -105,3 +105,5 @@ Yerel Windows GUI icinde GitHub API erisimi veya Ragnarok'a gercek giris testi C
 **GUVENLIK SINIRI:** Bu testte manifest imzasizdir. Eslesme, imzasiz beyanin gercek dosyayla tutarli oldugunu gosterir; paketin guvenilir veya yayin icin uygun oldugu anlamina gelmez. `signature_verified=false` ve `installation_allowed=false` zorunludur. Oyuna kurulum, dosya cikartma, GRF degistirme, guncelleme veya OYNA islemi yapilmaz. Gercek imzali yayin anahtarlari yine bos kalir.
 
 CI testleri: gercek paket ozetinin eslesmesi; ayni boydaki bozulmus paket; farkli boyut; yanlis profil; eksik/bozuk dosya; kaynak secimi degisince gecersizlesme; Windows GUI pencere acilisi. Bu test oyuncuya acik guncellemenin onayi degildir.
+
+**Kaynak repo taşınması (2026-11-05):** GUI'nin BEAM branch API allowlist kaynağı `LevelUpRagnarok/beam-patcher` olarak güncellendi. `LevelUpGT/beam-patcher` için GitHub yönlendirmelerine güvenilmiyor; read-only HTTPS istemcisi redirect kabul etmiyor. Eski `levelupgt.*` JSON/manifest şema kimlikleri geriye dönük uyumluluk için korunur. GitHub-hosted Windows CI bu commit için ayrıca doğrulanmalıdır; gerçek istemcide ağ testi ayrıca yapılmalıdır.

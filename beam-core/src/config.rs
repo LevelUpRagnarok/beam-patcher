@@ -52,6 +52,21 @@ pub struct PatcherConfig {
     pub target_grf: String,
     pub allow_manual_patch: bool,
     pub verify_checksums: bool,
+    /// Optional deployment-enforced per-region identity and patch SHA256 policy.
+    /// Existing generic Beam installs stay unchanged when omitted.
+    #[serde(default)]
+    pub compatibility_guard: Option<CompatibilityGuardConfig>,
+}
+
+/// Declares exactly which client and patch manifest a Beam installation serves.
+/// This is an opt-in gate until client EXE/GRF provenance is verified.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompatibilityGuardConfig {
+    pub profile_id: String,
+    pub region: String,
+    pub channel: String,
+    pub client_exe_sha256: String,
+    pub manifest_file: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -203,6 +218,7 @@ impl Config {
                 target_grf: "data.grf".to_string(),
                 allow_manual_patch: true,
                 verify_checksums: true,
+                compatibility_guard: None,
             },
             ui: UiConfig {
                 theme: "default".to_string(),
