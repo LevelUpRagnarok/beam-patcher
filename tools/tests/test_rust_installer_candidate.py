@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_rust_installer_candidate.py
 # Amac: Rust TurkuazInstaller onizleme ZIP/manifest sozlesmesinde fail-closed testleri
 # Modul - Python unittest
-# Version: 1.1.0-candidate
+# Version: 1.2.0-candidate
 # Aciklama: Sentetik .tzpkg pozitif/negatif fixture; imza veya gercek Windows install testi degil
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py
 
@@ -161,6 +161,18 @@ class RustCandidateContractTests(unittest.TestCase):
         self.assertIn("Cert:\\CurrentUser\\My", fixture)
         self.assertIn("finally {", fixture)
         self.assertIn("PASS_NOT_PRODUCTION", fixture)
+        self.assertIn("choco install nsis", workflow)
+        self.assertIn("--features setup-gui", workflow)
+        self.assertIn("-GuiStubPath $stub -MakensisPath $makensis", workflow)
+        self.assertIn("Assert-DistributionPair", fixture)
+        self.assertIn("build-distribution-pair", fixture)
+        self.assertIn("TurkuazSetup.exe", fixture)
+        self.assertIn("TurkuazInstallerBackup.exe", fixture)
+        self.assertIn("Sign-And-CheckTestExecutable", fixture)
+        self.assertIn("Get-AuthenticodeSignature", fixture)
+        self.assertIn("Reject wrong publisher pin", fixture)
+        self.assertIn("install-self --package-id", fixture)
+        self.assertIn("PRIMARY_NSIS_PAIR_PASS_NO_UPLOAD", fixture)
 
 
     def test_missing_payload_entrypoint_is_rejected(self):

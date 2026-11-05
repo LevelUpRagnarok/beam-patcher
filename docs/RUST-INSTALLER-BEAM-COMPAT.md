@@ -2,8 +2,8 @@
 Dosya Yolu: REPO_ROOT/docs/RUST-INSTALLER-BEAM-COMPAT.md
 Amac: Beam icin TurkuazInstaller Rust adayinin ayri ve yayinlamayan kabul sinirlarini belgelendirmek
 Modul - Markdown integration / acceptance plan
-Version: 1.1.0-candidate
-Aciklama: Gercek Beam exe ile unsigned Rust .tzpkg deneyi; eski release gate degistirilmez
+Version: 1.2.0-candidate
+Aciklama: Ephemeral CMS lifecycle + Turkuaz GUI primary/private NSIS pair smoke; release gate degismez
 Bagimli Oldugu Katman: .github/workflows/rust-installer-beam-compat.yml | docs/INSTALLER-STRATEGY-TURKUAZ.md
 -->
 
@@ -28,9 +28,9 @@ Its own packaging is different:
 | Capability | Existing Beam path | Rust candidate |
 | --- | --- | --- |
 | Package archive | Velopack full nupkg | Turkuaz v2 `.tzpkg` |
-| Install entry | Velopack Setup.exe | Signed `.tzsetup` / native setup wrapper (future) |
+| Install entry | Velopack Setup.exe | Test-signed `.tzsetup` plus Turkuaz GUI-stub-based primary; product signing NOT_RUN |
 | Release manifest | Old signed Velopack setup descriptor | Rust manifest describing the **.tzpkg bytes** |
-| Recovery backup | Private NSIS, old protected workflow | Separate Rust-distribution pair, not yet integrated |
+| Recovery backup | Private NSIS, old protected workflow | Ephemeral pair build/PE/signature CI probe; NSIS GUI acceptance NOT_RUN |
 | User data | Legacy QA config beside install | Rust state/journal/versions under separate user-data root |
 | Production signing | Required, unproven | Required, not attempted; ephemeral CI CMS test signer only |
 
@@ -57,7 +57,7 @@ duplicate/case-colliding entries, SHA drift and unexpected identities.
 Offline unit fixtures exercise rejection paths independently.
 
 The Windows package-generation step performs no game client launch or patch,
-no setup/NSIS distribution, and **no artifact upload**. An additional
+no public setup/NSIS distribution, and **no artifact upload**. An additional
 test-only step exercises the actual Rust install lifecycle with an
 **ephemeral, self-signed CMS fixture certificate** in the disposable
 GitHub-hosted Windows runner. The temporary test root is under RUNNER_TEMP,
@@ -70,10 +70,26 @@ to version 1.0.2 containing the same Beam EXE plus a changed QA README,
 refuses modified managed files, repairs, rolls back by the test-signed
 policy and uninstalls while preserving an unmanaged user-owned file.
 **No client executable is launched.** Production certificate-chain and
-Authenticode trust, installer wizard, native shortcuts/registry behavior,
+real publisher Authenticode trust, installer wizard, native shortcuts/registry behavior,
 real user-data migrations and clean Windows 10/11 VM acceptance remain
 NOT_RUN. A successful run is limited to an ephemeral CI signed-bundle
 lifecycle and does not grant distribution approval.
+
+The same hosted-Windows CI further compiles the pinned Rust CLI's
+`setup-gui` feature (without replacing the independently tested CLI) and
+installs NSIS for **temporary packaging only**. From the *same* test-signed
+version 1.0.2 `.tzsetup`, `build-distribution-pair` must atomically
+produce `TurkuazSetup.exe` and the private
+`TurkuazInstallerBackup.exe`. CI checks both PE headers, nonempty and
+distinct files, refuses a deliberately wrong publisher certificate
+pin without leaving a published pair, and signs/verifies both PE files
+with the ephemeral **untrusted** CI certificate. It then installs
+version 1.0.2 using `TurkuazSetup.exe install-self`, verifies managed
+state and uninstalls without disturbing the unmanaged user file.
+No end-user GUI is opened; the NSIS backup EXE is **not executed**,
+and neither EXE is uploaded, released or made available for download.
+A pass is a test-only pair-build and CLI self-extractor proof, not
+real GUI usability or NSIS recovery acceptance.
 
 ## Mandatory blockers before any Rust installer can replace legacy
 

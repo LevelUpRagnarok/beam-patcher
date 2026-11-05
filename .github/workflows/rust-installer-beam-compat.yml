@@ -1,8 +1,8 @@
 # Dosya Yolu: REPO_ROOT/.github/workflows/rust-installer-beam-compat.yml
 # Amac: Rust TurkuazInstaller paketini mevcut Beam QA EXE ile sandbox'ta sinamak
 # Modul - GitHub Actions / Unsigned Rust compatibility probe
-# Version: 1.1.0-candidate
-# Aciklama: Unsigned Rust tzpkg + ephemeral CI-signed lifecycle; no production distribution
+# Version: 1.2.0-candidate
+# Aciklama: Rust tzpkg + ephemeral CMS lifecycle ve Turkuaz/NSIS private pair; no release
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py | TurkuazInstaller/rust
 
 name: Beam Rust Installer Candidate Compatibility
@@ -110,6 +110,28 @@ jobs:
           python tools/check_rust_installer_candidate.py --package $package --manifest $manifest --payload $stage --upstream-sha $actual --package-id levelupgt.beampatcher.qa --version 1.0.1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host 'NO_SIGNER_NO_INSTALL_NO_UPLOAD: Rust package/manifest candidate accepted structurally'
+      - name: Install NSIS only for private fallback packaging
+        shell: pwsh
+        run: |
+          choco install nsis --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $makensis = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'NSIS/makensis.exe'
+          if (-not (Test-Path -LiteralPath $makensis -PathType Leaf)) { throw 'NSIS compiler not installed' }
+      - name: Build pinned Turkuaz Windows setup GUI stub without replacing the tested CLI
+        shell: pwsh
+        run: |
+          $root = (Get-Location).Path
+          $upstream = Join-Path $root 'build/turkuaz-rust'
+          $cli = Join-Path $upstream 'rust/target/release/turkuaz-installer.exe'
+          $output = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-output'
+          $headless = Join-Path $output 'turkuaz-cli-headless.exe'
+          $stub = Join-Path $output 'turkuaz-setup-gui-stub.exe'
+          Copy-Item -LiteralPath $cli -Destination $headless
+          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer --release --features setup-gui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item -LiteralPath $cli -Destination $stub
+          Copy-Item -LiteralPath $headless -Destination $cli -Force
+          if (-not (Test-Path -LiteralPath $stub -PathType Leaf)) { throw 'Rust GUI setup stub missing' }
       - name: Test offline Rust install/update/repair/rollback/uninstall with ephemeral CI certificate
         shell: pwsh
         env:
@@ -118,11 +140,13 @@ jobs:
           $root = (Get-Location).Path
           $cli = Join-Path $root 'build/turkuaz-rust/rust/target/release/turkuaz-installer.exe'
           $payload = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-payload'
-          & ./tools/Test-BeamRustEphemeralLifecycle.ps1 -InstallerPath $cli -PayloadDirectory $payload
+          $stub = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-output/turkuaz-setup-gui-stub.exe'
+          $makensis = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'NSIS/makensis.exe'
+          & ./tools/Test-BeamRustEphemeralLifecycle.ps1 -InstallerPath $cli -PayloadDirectory $payload -GuiStubPath $stub -MakensisPath $makensis
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Candidate is not a signed Turkuaz setup or public artifact
+      - name: Candidate primary and private NSIS are test-only and never uploaded
         shell: pwsh
         run: |
           Write-Host 'BURAK-INS-001 remains on its separately pinned legacy gate.'
-          Write-Host 'Only a disposable CI certificate signs an offline test bundle; no production signing or artifact upload.'
-          Write-Host 'No live client launched; no publisher-signed setup, NSIS pair or production release.'
+          Write-Host 'Disposable CI CMS/Authenticode only; primary GUI + NSIS backup are test-only and never uploaded.'
+          Write-Host 'No game launched, no production publisher signature, no signed product acceptance or release.'
