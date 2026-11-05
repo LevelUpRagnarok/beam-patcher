@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/.github/workflows/rust-installer-beam-compat.yml
 # Amac: Rust TurkuazInstaller paketini mevcut Beam QA EXE ile sandbox'ta sinamak
 # Modul - GitHub Actions / Unsigned Rust compatibility probe
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Ileriye donuk .tzpkg + unsigned manifest E2E; imzalama ve dagitim kesinlikle yok
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py | TurkuazInstaller/rust
 
@@ -74,7 +74,7 @@ jobs:
       - name: Compile upstream Rust CLI for unsigned QA package generation
         shell: pwsh
         run: |
-          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer
+          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer --release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Generate v2 tzpkg from actual Beam EXE, QA config and theme assets
         shell: pwsh
@@ -93,8 +93,13 @@ jobs:
           Copy-Item -LiteralPath 'installer/windows/config.qa.yml' -Destination (Join-Path $stage 'config.yml')
           Copy-Item -LiteralPath 'installer/windows/README-QA.txt' -Destination (Join-Path $stage 'README-QA.txt')
           Copy-Item -LiteralPath 'beam-ui/public/assets' -Destination (Join-Path $stage 'assets') -Recurse
-          $cli = Join-Path $upstream 'rust/target/debug/turkuaz-installer.exe'
+          $cli = Join-Path $upstream 'rust/target/release/turkuaz-installer.exe'
           if (-not (Test-Path -LiteralPath $cli -PathType Leaf)) { throw 'Rust candidate CLI missing' }
+          # Separate CLI startup / command dispatch from package writer faults.
+          & $cli --version
+          if ($LASTEXITCODE -ne 0) { throw 'Rust CLI startup/version smoke failed' }
+          & $cli build-package --help
+          if ($LASTEXITCODE -ne 0) { throw 'Rust CLI build-package dispatch smoke failed' }
           $package = Join-Path $out 'beam-qa-candidate.tzpkg'
           $manifest = Join-Path $out 'unsigned-beam-qa-manifest.yaml'
           & $cli build-package --package-id levelupgt.beampatcher.qa --version 1.0.1 --source $stage --output $package --executable beam-patcher.exe
