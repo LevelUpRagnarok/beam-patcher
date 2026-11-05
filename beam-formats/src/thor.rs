@@ -399,8 +399,14 @@ mod tests {
     }
 
     fn build_small_thor() -> Vec<u8> {
+        // Multiple tests call this helper in parallel: a PID-only fixed
+        // filename lets one test remove another test's THOR fixture.
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "beam-thor-test-{}-{}.thor", std::process::id(), 722
+            "beam-thor-test-{}-{stamp}.thor", std::process::id()
         ));
         let mut archive = Thor::new();
         archive.add_file("data/example.txt", b"actual payload");

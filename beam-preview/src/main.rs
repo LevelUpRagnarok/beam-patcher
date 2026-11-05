@@ -1,6 +1,6 @@
-// 📄 Dosya Yolu: /LevelUpGT/beam-patcher/beam-preview/src/main.rs
-// 📌 Amac: BEAM Windows GUI onizleme controller komutlari ve guvenli branch sorgulari
-// 📌 Modul - Rust
+// Dosya Yolu: REPO_ROOT/beam-preview/src/main.rs
+// Amac: BEAM Windows GUI onizleme controller komutlari ve guvenli branch sorgulari
+// Modul - Rust
 // Version: 0.5.0
 // Aciklama: Deneysel laboratuvar planini yalnizca Service uzerinden olusturur; kurulum kapali
 // Bagimli Oldugu Katman: Controller | Service | Tool | View | Language
@@ -47,7 +47,7 @@ struct ThorPreviewReport {
 #[tauri::command]
 fn preview_status() -> PreviewStatus {
     PreviewStatus {
-        name: "LevelUpGT BEAM Patcher",
+        name: "LevelUpRagnarok BEAM Patcher",
         mode: "Preview - Safe Mode",
         game_mutations_enabled: false,
         launcher_enabled: false,
@@ -151,7 +151,7 @@ async fn preview_list_branches(project: String, include_all: bool) -> Result<Vec
     let mut response = client
         .get(&url)
         .header(reqwest::header::ACCEPT, "application/vnd.github+json")
-        .header(reqwest::header::USER_AGENT, "LevelUpGT-BEAM-GUI-Preview/0.2")
+        .header(reqwest::header::USER_AGENT, "LevelUpRagnarok-BEAM-GUI-Preview/0.2")
         .send()
         .await
         .map_err(|e| format!("GitHub ulasilamadi: {e}"))?
@@ -231,7 +231,7 @@ mod branch_profiles_tests {
 
     #[test]
     fn restricts_branch_queries_to_public_allowlisted_repos() {
-        assert_eq!(public_branch_source("beam").unwrap(), "LevelUpGT/beam-patcher");
+        assert_eq!(public_branch_source("beam").unwrap(), "LevelUpRagnarok/beam-patcher");
         assert_eq!(public_branch_source("translation").unwrap(), "b1glord/ROenglishRE");
         assert!(public_branch_source("client").is_err());
         assert!(public_branch_source("../../user/unsafe").is_err());

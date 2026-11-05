@@ -1,6 +1,6 @@
-// 📄 Dosya Yolu: /LevelUpGT/beam-patcher/beam-preview/src/config/branch_visibility.rs
-// 📌 Amac: BEAM branch goruntuleyicisinin depo ve varsayilan dal kurallarini merkezi tanimlar
-// 📌 Modul - Config Rust
+// Dosya Yolu: REPO_ROOT/beam-preview/src/config/branch_visibility.rs
+// Amac: BEAM branch goruntuleyicisinin depo ve varsayilan dal kurallarini merkezi tanimlar
+// Modul - Config Rust
 // Version: 0.1.0
 // Aciklama: Test ve arsiv dallarini varsayilan listeden ayirir, gelismis gorunumu korur
 // Bagimli Oldugu Katman: Service | Tool
@@ -9,7 +9,7 @@ pub const PROJECT_BEAM: &str = "beam";
 pub const PROJECT_TRANSLATION: &str = "translation";
 pub const PROJECT_CLIENT: &str = "client";
 
-pub const REPOSITORY_BEAM: &str = "LevelUpGT/beam-patcher";
+pub const REPOSITORY_BEAM: &str = "LevelUpRagnarok/beam-patcher";
 pub const REPOSITORY_TRANSLATION: &str = "b1glord/ROenglishRE";
 
 const BEAM_DEFAULT_BRANCHES: &[&str] = &[

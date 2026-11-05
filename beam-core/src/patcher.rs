@@ -1,5 +1,6 @@
 use crate::{Config, Downloader, Error, Result};
 use crate::downloader::PatchInfo;
+use crate::patch_guard::PatchCompatibilityGuard;
 use beam_formats::{grf::Grf, gpf::Gpf, rgz::Rgz, thor::{Thor, ThorEntry, validate_client_path}, beam::BeamArchive};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -575,6 +576,7 @@ pub struct Patcher {
     config: Config,
     downloader: Downloader,
     temp_dir: PathBuf,
+    compatibility_guard: Option<PatchCompatibilityGuard>,
 }
 
 impl Drop for Patcher {
@@ -586,6 +588,8 @@ impl Drop for Patcher {
 
 impl Patcher {
     pub fn new(config: Config) -> Result<Self> {
+        // Validate the protected client identity before downloader or temp writes.
+        let compatibility_guard = PatchCompatibilityGuard::new(&config)?;
         let downloader = Downloader::new(config.clone())?;
         let temp_dir = create_patch_temp_dir()?;
 
@@ -593,6 +597,7 @@ impl Patcher {
             config,
             downloader,
             temp_dir,
+            compatibility_guard,
         })
     }
 
@@ -629,6 +634,9 @@ impl Patcher {
     where
         F: FnMut(u64, u64) + Send + 'static,
     {
+        if let Some(guard) = &self.compatibility_guard {
+            guard.validate_name(&patch.filename)?;
+        }
         self.ensure_recovered_client_state()?;
         validate_patch_filename(&patch.filename)?;
         let patch_path = self.temp_dir.join(&patch.filename);
@@ -676,6 +684,12 @@ impl Patcher {
     where
         F: FnMut(usize, usize, u64, u64) + Send + 'static,
     {
+        // Refuse unknown regional/channel patches before any lock or download.
+        if let Some(guard) = &self.compatibility_guard {
+            for patch in patches {
+                guard.validate_name(&patch.filename)?;
+            }
+        }
         // Guard both GRF and loose file updates with a single client lock.
         // This includes the empty-list path: recover unfinished updates first.
         let client_root = self.get_game_root()?;
@@ -727,6 +741,11 @@ impl Patcher {
                 }
             }
 
+            // Bind archive bytes to the protected region/channel manifest before
+            // parsing or applying either loose-client THOR or GRF patches.
+            if let Some(guard) = &self.compatibility_guard {
+                guard.validate_file(&patch_path)?;
+            }
             let is_thor = patch_path.extension()
                 .and_then(|extension| extension.to_str())
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("thor"));
@@ -793,6 +812,9 @@ impl Patcher {
 
     /// One-shot apply: opens its own GRF, applies, saves.
     pub async fn apply_patch(&self, patch_path: &Path) -> Result<()> {
+        if let Some(guard) = &self.compatibility_guard {
+            guard.validate_file(patch_path)?;
+        }
         let client_root = self.get_game_root()?;
         let _lock = try_lock_client_root(&client_root)?;
         recover_interrupted_client_transactions(&client_root)?;
@@ -820,6 +842,9 @@ impl Patcher {
 
     /// Internal: stage the patch contents into a caller-owned GRF without saving.
     async fn apply_patch_into_grf(&self, patch_path: &Path, grf: &mut Grf) -> Result<()> {
+        if let Some(guard) = &self.compatibility_guard {
+            guard.validate_file(patch_path)?;
+        }
         let extension = patch_path
             .extension()
             .and_then(|s| s.to_str())

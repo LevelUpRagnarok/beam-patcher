@@ -1,7 +1,7 @@
 <!--
-📄 Dosya Yolu: /LevelUpGT/beam-patcher/docs/BEAM-WINDOWS-GUI-PREVIEW.md
-📌 Amac: BEAM Windows onizleme paketinin guvenli yerel test talimati
-📌 Modul - Markdown
+Dosya Yolu: REPO_ROOT/docs/BEAM-WINDOWS-GUI-PREVIEW.md
+Amac: BEAM Windows onizleme paketinin guvenli yerel test talimati
+Modul - Markdown
 Version: 0.5.0
 Aciklama: Gelistiriciye ozel deney plani, kapsam sinirlari ve test kabullerini aciklar
 Bagimli Oldugu Katman: View | Language
@@ -37,7 +37,7 @@ Kaynak: `beam-preview/public/index.html`, `beam-preview/src/main.rs`, `beam-prev
 ## GitHub branch görünürlüğü (v0.2, yalnızca okuma)
 
 - İstemci profili: Eski 2015 / Yeni 2015 / 2022 Hybrid — yalnızca arayüz üzerinde görüntülenir, oyun klasörü veya patch geçmişi değiştirilmez.
-- Kaynak kod deposu: \`LevelUpGT/beam-patcher\` veya \`b1glord/ROenglishRE\`. Uygulama GitHub'ın herkese açık branches API'sini salt-okunur sorgular; en fazla 100 dal ve 12 saniye istek zaman aşımı.
+- Kaynak kod deposu: \`LevelUpRagnarok/beam-patcher\` veya \`b1glord/ROenglishRE\`. Uygulama GitHub'ın herkese açık branches API'sini salt-okunur sorgular; en fazla 100 dal ve 12 saniye istek zaman aşımı.
 - Dal seçimi: branch adı, commit SHA ve korumalı dal bilgisi gösterilir. **Git checkout, branch içeriği indirme, yerel dosya değişimi, THOR uygulaması veya kanal değiştirme yapılmaz.**
 - \`LevelUpGT/RagnarokClient\` özel depodur; kişisel token depolanmadan/uygulamaya gömülmeden bu sürümde dallarını göstermez. İleride güvenli yetkili servis üzerinden sorgulanabilir.
 - Branch isimleri kullanıcı girdisi olarak serbest GitHub URL'sine çevrilmez. Backend API yalnızca iki allowlist reposunu sorgular; erişim kimliği paylaşılmaz.
@@ -96,3 +96,5 @@ Windows GUI Preview CI iki katmani dogrular:
 2. Rust servis testleri: allowlist depo, guvenli branch formati, tam SHA, profil/motor eslesmesi ve kurulum/oyun/dagitim izinlerinin tamamen kapali olmasi.
 
 Yerel Windows GUI icinde GitHub API erisimi veya Ragnarok'a gercek giris testi CI basarisi ile otomatik dogrulanmis sayilmaz.
+
+**Kaynak repo taşınması (2026-11-05):** GUI'nin BEAM branch API allowlist kaynağı `LevelUpRagnarok/beam-patcher` olarak güncellendi. `LevelUpGT/beam-patcher` için GitHub yönlendirmelerine güvenilmiyor; read-only HTTPS istemcisi redirect kabul etmiyor. Eski `levelupgt.*` JSON/manifest şema kimlikleri geriye dönük uyumluluk için korunur. GitHub-hosted Windows CI bu commit için ayrıca doğrulanmalıdır; gerçek istemcide ağ testi ayrıca yapılmalıdır.
