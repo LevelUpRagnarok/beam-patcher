@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/check_installer_workflows.py
 # Amac: TURKUAZ-ONLY-001; NSIS derleme/yayinini ve bagimsiz setup dagitimini engeller
 # Modul - Python / CI policy checker
-# Version: 2.0.0-candidate
+# Version: 2.1.0-candidate
 # Aciklama: GitHub Actions ve kurulum kaynaklarinda tek TurkuazInstaller primary kuralini zorlar
 # Bagimli Oldugu Katman: tools/verify_installer_primary.py | .github/workflows
 
@@ -27,6 +27,7 @@ REQUIRED = (
 )
 RETIRED = (
     "installer/windows/BeamPatcher-NSIS-Backup.nsi",
+    "installer/windows/BeamPatcher-QA.iss",
     "tools/verify_installer_pair.py",
     ".github/workflows/dual-installer-policy.yml",
 )
@@ -46,8 +47,11 @@ def policy_errors(root: Path) -> list[str]:
     for relative in RETIRED:
         if (root / relative).exists():
             errors.append(f"retired installer component still present: {relative}")
-    if any((root / "installer").rglob("*.nsi")):
+    installer = root / "installer"
+    if any(installer.rglob("*.nsi")):
         errors.append("NSIS source must not exist inside Beam installer tree")
+    if any(installer.rglob("*.iss")):
+        errors.append("Inno Setup source must not exist inside Beam installer tree")
 
     guide = root / "docs/WINDOWS-SETUP-PATCH-QA.md"
     if guide.is_file() and re.search(

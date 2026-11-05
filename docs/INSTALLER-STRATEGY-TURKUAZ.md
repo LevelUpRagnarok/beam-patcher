@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/INSTALLER-STRATEGY-TURKUAZ.md
 Amac: BeamPatcher tek TurkuazInstaller Windows dagitim ve guvenlik politikasini tanimlar
 Modul - Markdown / Installer Policy
-Version: 2.0.0-candidate
+Version: 2.1.0-candidate
 Aciklama: Ikinci kurulum kaldirildi; imzasiz/test-signed dagitim yasaktir
 Bagimli Oldugu Katman: AGENTS.md | tools/verify_installer_primary.py
 -->
@@ -15,7 +15,9 @@ The only supported user-facing Windows installer for BeamPatcher is
 **TurkuazInstaller**. The former NSIS backup script, its compilation
 and install smoke, dual-output evidence and compulsory fallback policy
 are retired. No other independent installer may be distributed.
-The old Inno historical QA source is not an active release path.
+The obsolete Inno QA source has also been deleted; neither an Inno
+nor an NSIS installer script is permitted in the current tree.
+CI rejects the reintroduction of .iss and .nsi installer source files.
 
 ## Three independent test layers
 

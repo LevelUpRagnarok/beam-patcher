@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: TURKUAZ-ONLY-001 Turkuaz primary kontrati, signer ve NSIS kaldirma regresyonu
 # Modul - Python unittest / CI policy
-# Version: 2.0.1-candidate
+# Version: 2.1.0-candidate
 # Aciklama: Sentetik negatif kabul kaniti; production imza/E2E yerine gecmez
 # Bagimli Oldugu Katman: tools/verify_installer_primary.py | tools/check_installer_workflows.py
 
@@ -162,6 +162,10 @@ class TurkuazOnlyDistributionContractTests(unittest.TestCase):
             extra.write_text("script", encoding="utf-8")
             self.assertTrue(any("NSIS source" in s for s in policy_errors(root)))
             extra.unlink()
+            obsolete_inno = root / "installer/windows/old-inno-installer.iss"
+            obsolete_inno.write_text("[Setup]", encoding="utf-8")
+            self.assertTrue(any("Inno Setup source" in s for s in policy_errors(root)))
+            obsolete_inno.unlink()
             workflow = root / ".github/workflows/windows-setup-patch-qa.yml"
             workflow.write_text("choco install nsis --yes", encoding="utf-8")
             self.assertTrue(any("deprecated NSIS" in s for s in policy_errors(root)))
