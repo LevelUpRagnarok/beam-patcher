@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: TURKUAZ-ONLY-001 Turkuaz primary kontrati, signer ve NSIS kaldirma regresyonu
 # Modul - Python unittest / CI policy
-# Version: 2.1.0-candidate
+# Version: 2.2.0-candidate
 # Aciklama: Sentetik negatif kabul kaniti; production imza/E2E yerine gecmez
 # Bagimli Oldugu Katman: tools/verify_installer_primary.py | tools/check_installer_workflows.py
 
@@ -107,6 +107,25 @@ class TurkuazOnlyDistributionContractTests(unittest.TestCase):
         self.data["artifact_sha256"]["nsis_backup"] = "f" * 64
         with self.assertRaisesRegex(ValueError, "artifact checksums"):
             self.verify()
+
+    def test_secondary_installer_filesystem_payload_rejected(self):
+        # Neither an unlisted backup directory nor an old installer EXE
+        # can be part of an otherwise valid Turkuaz primary proof root.
+        backup = self.root / "backup"
+        backup.mkdir()
+        with self.assertRaisesRegex(ValueError, "secondary installer artifact"):
+            self.verify()
+        backup.rmdir()
+        for filename in (
+            "TurkuazInstallerBackup.exe",
+            "TurkuazRagnarokOnline-NSIS-BACKUP-QA-Setup.exe",
+        ):
+            with self.subTest(filename=filename):
+                rogue = self.root / "primary" / filename
+                rogue.write_bytes(b"unauthorized secondary installer")
+                with self.assertRaisesRegex(ValueError, "secondary installer artifact"):
+                    self.verify()
+                rogue.unlink()
 
     def test_version_source_role_and_readiness_rejected(self):
         with self.assertRaises(ValueError):

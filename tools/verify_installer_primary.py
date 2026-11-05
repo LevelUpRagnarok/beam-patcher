@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/verify_installer_primary.py
 # Amac: TURKUAZ-ONLY-001 tek birincil kurulum metadata, hash ve kapali yayin kontrati
 # Modul - Python / QA policy checker
-# Version: 2.0.0-candidate
+# Version: 2.1.0-candidate
 # Aciklama: Tek Turkuaz primary icin hash/kimlik; imza ve native E2E ayrica zorunlu
 # Bagimli Oldugu Katman: docs/INSTALLER-STRATEGY-TURKUAZ.md | tools/Confirm-TurkuazTrust.ps1
 
@@ -19,7 +19,7 @@ from pathlib import Path
 import sys
 
 # Supply-chain identity: matches the explicit checkout ref in
-# .github/workflows/dual-installer-policy.yml. Change both only in a
+# .github/workflows/turkuaz-primary-policy.yml. Change both only in a
 # reviewed, separately tested upstream integration update.
 PINNED_TURKUAZ_SOURCE_SHA = "1048931bf7498ab4d4440414c4463e6ee5e7421e"
 
@@ -53,6 +53,16 @@ def ensure(condition, message):
 def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> dict:
     root = bundle_root.resolve(strict=True)
     ensure(root.is_dir(), "primary bundle directory is missing")
+    # TURKUAZ-ONLY-001: a signed primary directory must not silently
+    # carry an obsolete backup installer outside the hash-checked roles.
+    for relative in (
+        "backup",
+        "primary/TurkuazInstallerBackup.exe",
+        "primary/TurkuazRagnarokOnline-NSIS-BACKUP-QA-Setup.exe",
+    ):
+        retired = root / relative
+        ensure(not retired.exists() and not retired.is_symlink(),
+               "deprecated secondary installer artifact present: " + relative)
     ensure(len(source_sha) == 40 and all(c in "0123456789abcdef" for c in source_sha.lower()),
            "exact 40-hex commit is required")
     ensure(metadata.get("schema") == "levelupgt.turkuaz-primary-proof.v1",
