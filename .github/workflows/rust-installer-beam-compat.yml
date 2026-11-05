@@ -1,8 +1,8 @@
 # Dosya Yolu: REPO_ROOT/.github/workflows/rust-installer-beam-compat.yml
 # Amac: Rust TurkuazInstaller paketini mevcut Beam QA EXE ile sandbox'ta sinamak
 # Modul - GitHub Actions / Unsigned Rust compatibility probe
-# Version: 1.0.1-candidate
-# Aciklama: Ileriye donuk .tzpkg + unsigned manifest E2E; imzalama ve dagitim kesinlikle yok
+# Version: 1.1.0-candidate
+# Aciklama: Unsigned Rust tzpkg + ephemeral CI-signed lifecycle; no production distribution
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py | TurkuazInstaller/rust
 
 name: Beam Rust Installer Candidate Compatibility
@@ -13,6 +13,7 @@ on:
       - ".github/workflows/rust-installer-beam-compat.yml"
       - "tools/check_rust_installer_candidate.py"
       - "tools/tests/test_rust_installer_candidate.py"
+      - "tools/Test-BeamRustEphemeralLifecycle.ps1"
       - "docs/RUST-INSTALLER-BEAM-COMPAT.md"
       - "installer/windows/config.qa.yml"
       - "beam-patcher/**"
@@ -41,7 +42,7 @@ jobs:
         run: python -m unittest discover -s tools/tests -p test_rust_installer_candidate.py -v
 
   windows-candidate:
-    name: Windows actual Beam EXE to unsigned Rust tzpkg
+    name: Windows Beam Rust tzpkg and ephemeral CMS lifecycle
     needs: offline-contract
     runs-on: windows-2025
     timeout-minutes: 90
@@ -109,9 +110,19 @@ jobs:
           python tools/check_rust_installer_candidate.py --package $package --manifest $manifest --payload $stage --upstream-sha $actual --package-id levelupgt.beampatcher.qa --version 1.0.1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host 'NO_SIGNER_NO_INSTALL_NO_UPLOAD: Rust package/manifest candidate accepted structurally'
+      - name: Test offline Rust install/update/repair/rollback/uninstall with ephemeral CI certificate
+        shell: pwsh
+        env:
+          BEAM_RUNNER_KIND: ${{ runner.environment }}
+        run: |
+          $root = (Get-Location).Path
+          $cli = Join-Path $root 'build/turkuaz-rust/rust/target/release/turkuaz-installer.exe'
+          $payload = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-payload'
+          & ./tools/Test-BeamRustEphemeralLifecycle.ps1 -InstallerPath $cli -PayloadDirectory $payload
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Candidate is not a signed Turkuaz setup or public artifact
         shell: pwsh
         run: |
           Write-Host 'BURAK-INS-001 remains on its separately pinned legacy gate.'
-          Write-Host 'The Rust .tzpkg candidate is not signed, installed or uploaded.'
-          Write-Host 'No live-client, signed .tzsetup, NSIS pair or production release.'
+          Write-Host 'Only a disposable CI certificate signs an offline test bundle; no production signing or artifact upload.'
+          Write-Host 'No live client launched; no publisher-signed setup, NSIS pair or production release.'

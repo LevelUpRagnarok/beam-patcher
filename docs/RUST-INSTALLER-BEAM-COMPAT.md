@@ -2,14 +2,14 @@
 Dosya Yolu: REPO_ROOT/docs/RUST-INSTALLER-BEAM-COMPAT.md
 Amac: Beam icin TurkuazInstaller Rust adayinin ayri ve yayinlamayan kabul sinirlarini belgelendirmek
 Modul - Markdown integration / acceptance plan
-Version: 1.0.0-candidate
+Version: 1.1.0-candidate
 Aciklama: Gercek Beam exe ile unsigned Rust .tzpkg deneyi; eski release gate degistirilmez
 Bagimli Oldugu Katman: .github/workflows/rust-installer-beam-compat.yml | docs/INSTALLER-STRATEGY-TURKUAZ.md
 -->
 
 # BeamPatcher - TurkuazInstaller Rust compatibility (experimental)
 
-**Status: DEVELOPMENT / UNSIGNED / NO INSTALL / NOT RELEASE READY.**
+**Status: DEVELOPMENT / NO PRODUCT SIGNING / TEST-ONLY CI INSTALL / NOT RELEASE READY.**
 
 ## Why this is a separate PR
 
@@ -32,7 +32,7 @@ Its own packaging is different:
 | Release manifest | Old signed Velopack setup descriptor | Rust manifest describing the **.tzpkg bytes** |
 | Recovery backup | Private NSIS, old protected workflow | Separate Rust-distribution pair, not yet integrated |
 | User data | Legacy QA config beside install | Rust state/journal/versions under separate user-data root |
-| Production signing | Required, unproven | Required, not attempted by candidate |
+| Production signing | Required, unproven | Required, not attempted; ephemeral CI CMS test signer only |
 
 **The old signed Setup.exe validator must not be silently reused as
 a validator for a Rust .tzpkg manifest.** Signature trust, Authenticode
@@ -56,12 +56,24 @@ It rejects missing files, foreign archive entries, path traversal,
 duplicate/case-colliding entries, SHA drift and unexpected identities.
 Offline unit fixtures exercise rejection paths independently.
 
-The Windows job performs **no game client launch or patch**, no
-installation, no manifest signing, no setup/NSIS distribution, and
-**no artifact upload**. A successful run proves only the limited
-cross-repository package-generation contract at the stated commit.
-It does not prove actual GUI asset loading, antivirus reputation,
-Windows 10/11 compatibility or release provenance.
+The Windows package-generation step performs no game client launch or patch,
+no setup/NSIS distribution, and **no artifact upload**. An additional
+test-only step exercises the actual Rust install lifecycle with an
+**ephemeral, self-signed CMS fixture certificate** in the disposable
+GitHub-hosted Windows runner. The temporary test root is under RUNNER_TEMP,
+no publisher trust store is modified, and all test materials are cleaned
+up after the run. This is not a publisher-signed Windows installer.
+
+The test signs an offline QA manifest that binds the actual Beam .tzpkg;
+it checks altered manifest rejection, installs version 1.0.1, updates
+to version 1.0.2 containing the same Beam EXE plus a changed QA README,
+refuses modified managed files, repairs, rolls back by the test-signed
+policy and uninstalls while preserving an unmanaged user-owned file.
+**No client executable is launched.** Production certificate-chain and
+Authenticode trust, installer wizard, native shortcuts/registry behavior,
+real user-data migrations and clean Windows 10/11 VM acceptance remain
+NOT_RUN. A successful run is limited to an ephemeral CI signed-bundle
+lifecycle and does not grant distribution approval.
 
 ## Mandatory blockers before any Rust installer can replace legacy
 

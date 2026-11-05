@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_rust_installer_candidate.py
 # Amac: Rust TurkuazInstaller onizleme ZIP/manifest sozlesmesinde fail-closed testleri
 # Modul - Python unittest
-# Version: 1.0.0-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Sentetik .tzpkg pozitif/negatif fixture; imza veya gercek Windows install testi degil
 # Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py
 
@@ -136,6 +136,32 @@ class RustCandidateContractTests(unittest.TestCase):
         (self.payload / "config.yml").write_text("patcher:\n  qa_only: false\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "QA-only config"):
             self.verify()
+
+    def test_ephemeral_windows_lifecycle_is_isolated_and_not_published(self):
+        workflow = (ROOT / ".github/workflows/rust-installer-beam-compat.yml").read_text(
+            encoding="utf-8"
+        )
+        fixture = (ROOT / "tools/Test-BeamRustEphemeralLifecycle.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Test-BeamRustEphemeralLifecycle.ps1", workflow)
+        self.assertIn("BEAM_RUNNER_KIND:", workflow)
+        self.assertNotIn("actions/upload-artifact", workflow)
+        self.assertNotIn("secrets.", workflow)
+        self.assertIn("New-SelfSignedCertificate", fixture)
+        self.assertIn("GITHUB_ACTIONS", fixture)
+        self.assertIn("github-hosted", fixture)
+        for operation in ("'install'", "'update'", "'repair'", "'rollback'",
+                          "'uninstall'"):
+            with self.subTest(operation=operation):
+                self.assertIn(operation, fixture)
+        self.assertIn("Reject CMS tamper", fixture)
+        self.assertIn("Reject tampered managed file", fixture)
+        self.assertIn("user-owned.txt", fixture)
+        self.assertIn("Cert:\\CurrentUser\\My", fixture)
+        self.assertIn("finally {", fixture)
+        self.assertIn("PASS_NOT_PRODUCTION", fixture)
+
 
     def test_missing_payload_entrypoint_is_rejected(self):
         (self.payload / "beam-patcher.exe").unlink()
