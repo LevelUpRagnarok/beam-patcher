@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: TURKUAZ-ONLY-001 Turkuaz primary kontrati, signer ve NSIS kaldirma regresyonu
 # Modul - Python unittest / CI policy
-# Version: 2.0.0-candidate
+# Version: 2.0.1-candidate
 # Aciklama: Sentetik negatif kabul kaniti; production imza/E2E yerine gecmez
 # Bagimli Oldugu Katman: tools/verify_installer_primary.py | tools/check_installer_workflows.py
 
@@ -140,7 +140,7 @@ class TurkuazOnlyDistributionContractTests(unittest.TestCase):
             target.write_text("policy fixture", encoding="utf-8")
         main = root / ".github/workflows" / RELEASE_WORKFLOW
         main.write_text(
-            "TurkuazInstaller\nverify_installer_primary.py\nwindows-latest\n"
+            "TurkuazInstaller\ntools/verify_installer_primary.py\nwindows-latest\n"
             "actions/upload-artifact@v4\nenvironment: windows-installer-signing\n"
             "build-primary-and-gate:\nif: github.event_name == 'workflow_dispatch'\n"
             "Confirm-TurkuazTrust.ps1\nTest-BeamTrustNegative.ps1\n",
