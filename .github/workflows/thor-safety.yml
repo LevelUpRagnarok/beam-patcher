@@ -1,8 +1,8 @@
 # File Path: /.github/workflows/thor-safety.yml
 # Purpose: Build and test THOR parsing/GRF safety patches before merge
 # Module: CI - GitHub Actions YAML
-# Version: 1.0.1
-# Description: Upstream has no Cargo.lock yet; resolve dependencies to exercise format and core tests
+# Version: 1.5.2
+# Description: Produce isolated SHA-verified Windows THOR tester after real-fixture acceptance
 # Dependency Layer: Tool
 
 name: THOR Safety Regression
@@ -20,6 +20,10 @@ on:
       - "beam-core/**"
       - ".github/workflows/thor-safety.yml"
   workflow_dispatch:
+
+concurrency:
+  group: BEAM-THOR-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -42,6 +46,126 @@ jobs:
         run: cargo test -p beam-formats --lib
       - name: Test patch-mode refusal and target selection
         run: cargo test -p beam-core --lib
+      - name: Download pinned real 2022 Hybrid THOR fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 3 \
+            --output "$RUNNER_TEMP/turkuaz-hybrid-2022.thor" \
+            "https://github.com/b1glord/ROenglishRE/releases/download/rpatchur-2022-hybrid-test/turkuaz-2022-hybrid-8cfc3211f8eb.thor"
+          echo "e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8  $RUNNER_TEMP/turkuaz-hybrid-2022.thor" | sha256sum --check
+
+      - name: Test published Hybrid THOR in disposable client directory
+        env:
+          BEAM_REAL_HYBRID_THOR: ${{ runner.temp }}/turkuaz-hybrid-2022.thor
+        run: cargo test -p beam-core --lib real_roenglishre_2022_hybrid_thor_installs_in_disposable_directory -- --nocapture
+
       - name: Compile safe headless patching modules
         run: cargo check -p beam-core
+
+  test-thor-windows-hosted:
+    name: Windows hosted THOR regression
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: beam-thor-windows
+      - name: Test THOR format on Windows
+        shell: pwsh
+        run: |
+          cargo test -p beam-formats --lib
+          if ($LASTEXITCODE -ne 0) { throw "THOR format tests failed" }
+      - name: Test client recovery and file locking on Windows
+        shell: pwsh
+        run: |
+          cargo test -p beam-core --lib
+          if ($LASTEXITCODE -ne 0) { throw "Client transaction and recovery tests failed" }
+
+      - name: Verify and apply pinned Hybrid THOR on Windows test filesystem
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = Join-Path $env:RUNNER_TEMP "turkuaz-hybrid-2022.thor"
+          curl.exe --fail --location --retry 3 --retry-delay 3 --output "$path" "https://github.com/b1glord/ROenglishRE/releases/download/rpatchur-2022-hybrid-test/turkuaz-2022-hybrid-8cfc3211f8eb.thor"
+          if ($LASTEXITCODE -ne 0) { throw "Hybrid THOR download failed" }
+          $expected = "e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8"
+          $actual = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "Hybrid THOR SHA256 mismatch" }
+          $env:BEAM_REAL_HYBRID_THOR = $path
+          cargo test -p beam-core --lib real_roenglishre_2022_hybrid_thor_installs_in_disposable_directory -- --nocapture
+          if ($LASTEXITCODE -ne 0) { throw "Real 2022 Hybrid THOR Windows application failed" }
+
+      - name: Build isolated Windows THOR sandbox tester
+        shell: pwsh
+        run: |
+          cargo build --release -p beam-core --example thor_smoke
+          if ($LASTEXITCODE -ne 0) { throw "Windows sandbox smoke binary failed to build" }
+
+      - name: Execute sandbox EXE with pinned Hybrid THOR
+        shell: pwsh
+        run: |
+          $path = Join-Path $env:RUNNER_TEMP "turkuaz-hybrid-2022.thor"
+          $bin = Join-Path $env:GITHUB_WORKSPACE "target\release\examples\thor_smoke.exe"
+          & "$bin" "$path" "e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8"
+          if ($LASTEXITCODE -ne 0) { throw "Standalone sandbox EXE failed real Hybrid THOR test" }
+          # A nonzero exit code is EXPECTED here; run as a child process so
+          # PowerShell's native-command error policy does not abort this step.
+          $badDigest = "0000000000000000000000000000000000000000000000000000000000000000"
+          $negative = Start-Process -FilePath "$bin" -ArgumentList @("`"$path`"", $badDigest) -Wait -PassThru -NoNewWindow
+          if ($negative.ExitCode -eq 0) { throw "Sandbox EXE accepted an incorrect digest" }
+          Write-Host "PASS: Incorrect SHA-256 rejected with exit code $($negative.ExitCode)"
+
+      - name: Package isolated test executable with its checksum
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "beam-thor-sandbox-package"
+          New-Item -ItemType Directory -Force -Path "$dir" | Out-Null
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "target\release\examples\thor_smoke.exe") "$dir\thor_smoke.exe"
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "docs\THOR-SANDBOX-WINDOWS.md") "$dir\README.md"
+          $hash = (Get-FileHash "$dir\thor_smoke.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath "$dir\thor_smoke.exe.sha256" -Value "$hash  thor_smoke.exe" -Encoding ascii
+          Write-Host "Standalone Windows tester SHA-256: $hash"
+
+      - name: Upload test-only Windows sandbox package
+        uses: actions/upload-artifact@v4
+        with:
+          name: beam-thor-sandbox-windows-x64
+          path: ${{ runner.temp }}/beam-thor-sandbox-package/
+          if-no-files-found: error
+          retention-days: 7
+
+  test-thor-windows:
+    name: FURY Windows THOR installer smoke (opt-in)
+    # Hosted Windows regression runs on every PR. Never queue an offline
+    # private runner unless an operator has explicitly enabled this gate.
+    if: ${{ vars.BEAM_FURY_THOR_RUNNER_ENABLED == 'true' }}
+    runs-on:
+      - self-hosted
+      - Windows
+      - X64
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Verify local Rust toolchain
+        shell: pwsh
+        run: |
+          rustc --version
+          cargo --version
+      - name: Test THOR header and client paths
+        shell: pwsh
+        run: |
+          cargo test -p beam-formats --lib
+          if ($LASTEXITCODE -ne 0) { throw "THOR parser tests failed" }
+      - name: Test staged Windows loose-file transactions
+        shell: pwsh
+        run: |
+          cargo test -p beam-core --lib
+          if ($LASTEXITCODE -ne 0) { throw "Windows THOR installer tests failed" }
 

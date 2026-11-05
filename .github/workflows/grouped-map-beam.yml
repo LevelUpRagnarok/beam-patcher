@@ -1,0 +1,84 @@
+# Offline-only BEAM v1 map package QA. Never applies a patch, changes GRF or releases.
+name: Grouped Map BEAM Contract QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/build_map_beam.py"
+      - "tools/tests/test_build_map_beam.py"
+      - "beam-formats/src/beam.rs"
+      - "beam-formats/src/bin/verify_map_beam.rs"
+      - "beam-formats/Cargo.toml"
+      - "tools/tests/prepare_rust_beam_fixture.py"
+      - ".github/workflows/grouped-map-beam.yml"
+  pull_request:
+    paths:
+      - "tools/build_map_beam.py"
+      - "tools/tests/test_build_map_beam.py"
+      - "beam-formats/src/beam.rs"
+      - "beam-formats/src/bin/verify_map_beam.rs"
+      - ".github/workflows/grouped-map-beam.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python synthetic format / catalog / no-overwrite regressions
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_build_map_beam.py' -v
+      - name: Rust BEAM archive roundtrip compatibility
+        run: cargo test -p beam-formats save_open_roundtrip_with_grf_path
+      - name: Rust verifier unit tests
+        run: cargo test -p beam-formats --bin verify_map_beam
+      - name: Python encoder to actual Rust BeamArchive interoperability
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tools/tests/prepare_rust_beam_fixture.py "$RUNNER_TEMP/beam-interop"
+          cargo run --quiet -p beam-formats --bin verify_map_beam -- \
+            "$RUNNER_TEMP/beam-interop/custom-maps.beam" \
+            "$RUNNER_TEMP/beam-interop/maps" \
+            "$RUNNER_TEMP/beam-interop/maps/manifest.json"
+      - name: Isolated BEAM to GRF application and full Rust readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/RagnarokMapcache-QA"
+          cargo run --quiet -p beam-formats --bin verify_map_beam -- \
+            "$RUNNER_TEMP/beam-interop/custom-maps.beam" \
+            "$RUNNER_TEMP/beam-interop/maps" \
+            "$RUNNER_TEMP/beam-interop/maps/manifest.json" \
+            --qa-grf-root "$RUNNER_TEMP/RagnarokMapcache-QA"
+      - name: Isolated GRF QA must reject non-QA output roots
+        shell: bash
+        run: |
+          set -euo pipefail
+          if cargo run --quiet -p beam-formats --bin verify_map_beam -- \
+            "$RUNNER_TEMP/beam-interop/custom-maps.beam" \
+            "$RUNNER_TEMP/beam-interop/maps" \
+            "$RUNNER_TEMP/beam-interop/maps/manifest.json" \
+            --qa-grf-root "$RUNNER_TEMP/beam-interop"; then
+            echo "::error::QA GRF application accepted an arbitrary output folder"
+            exit 1
+          fi
+          echo 'BEAM_GRF_QA_ROOT_GUARD_OK'
+      - name: Rust readback must fail if source SHA drifts
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'tampered' >> "$RUNNER_TEMP/beam-interop/maps/data/anotherdungeon/qa_map1.rsw"
+          if cargo run --quiet -p beam-formats --bin verify_map_beam -- \
+            "$RUNNER_TEMP/beam-interop/custom-maps.beam" \
+            "$RUNNER_TEMP/beam-interop/maps" \
+            "$RUNNER_TEMP/beam-interop/maps/manifest.json"; then
+            echo "::error::Rust readback accepted mismatched source hash"
+            exit 1
+          fi
+          echo 'BEAM_RUST_NEGATIVE_SHA_DRIFT_REJECTED'

@@ -7,6 +7,7 @@ use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 use tracing::{debug, info, warn};
 use std::collections::HashSet;
+use beam_formats::thor::validate_client_path;
 
 pub struct Downloader {
     client: Client,
@@ -166,7 +167,14 @@ impl Downloader {
         }
         
         let content = response.text().await?;
-        let all_patches = self.parse_patch_list(&content)?;
+        let all_patches = Self::parse_patch_list(&content)?;
+        if self.config.patcher.verify_checksums && all_patches.iter().any(|p| p.checksum.is_none()) {
+            return Err(Error::InvalidConfig(
+                "Patch list lacks SHA-256 digests. A legacy rPatchur index/filename \
+                 list requires a separate signed BEAM manifest before automatic installation."
+                    .to_string(),
+            ));
+        }
         
         let applied_patches = self.load_applied_patches()?;
         
@@ -183,43 +191,86 @@ impl Downloader {
         Ok(pending_patches)
     }
     
-    fn parse_patch_list(&self, content: &str) -> Result<Vec<PatchInfo>> {
+    /// Read native BEAM (filename sha256 size) or numbered rPatchur
+    /// (index filename [sha256] [size]) manifests with strict ordering.
+    fn parse_patch_list(content: &str) -> Result<Vec<PatchInfo>> {
         let mut patches = Vec::new();
-        
-        for line in content.lines() {
-            let line = line.trim();
-            if line.is_empty() || line.starts_with('#') {
+        let mut names = HashSet::new();
+        let mut indexed: Option<bool> = None;
+        let mut previous_index = 0u64;
+        for (line_no, raw) in content.lines().enumerate() {
+            let line = raw.trim();
+            if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
                 continue;
             }
-            
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.is_empty() {
-                continue;
+            let is_indexed = parts[0].bytes().all(|b| b.is_ascii_digit());
+            if let Some(was_indexed) = indexed {
+                if was_indexed != is_indexed {
+                    return Err(Error::InvalidConfig("Mixed patch manifest layouts".into()));
+                }
             }
-            
-            let filename = parts[0].to_string();
-            let checksum = if parts.len() > 1 {
-                Some(parts[1].to_string())
+            indexed = Some(is_indexed);
+            let fields = if is_indexed {
+                if !(2..=4).contains(&parts.len()) {
+                    return Err(Error::InvalidConfig(format!(
+                        "Invalid indexed plist row {}", line_no + 1
+                    )));
+                }
+                let index: u64 = parts[0].parse().map_err(|_| Error::InvalidConfig(
+                    "Patch index is too large".into()
+                ))?;
+                if index == 0 || index <= previous_index {
+                    return Err(Error::InvalidConfig("Duplicate/unordered patch index".into()));
+                }
+                previous_index = index;
+                &parts[1..]
             } else {
-                None
+                if parts.len() > 3 {
+                    return Err(Error::InvalidConfig("Invalid BEAM manifest row".into()));
+                }
+                &parts[..]
             };
-            let size = if parts.len() > 2 {
-                parts[2].parse::<u64>().ok()
-            } else {
-                None
+
+            let filename = fields[0];
+            validate_client_path(filename).map_err(|_| Error::InvalidConfig(
+                format!("Unsafe patch archive name at line {}", line_no + 1)
+            ))?;
+            let lower = filename.to_ascii_lowercase();
+            if filename.contains('/') || filename.contains('\\')
+                || ![".thor", ".beam", ".gpf", ".rgz"].iter().any(|suffix| lower.ends_with(suffix))
+            {
+                return Err(Error::InvalidConfig("Unexpected patch filename or type".into()));
+            }
+            if !names.insert(lower) {
+                return Err(Error::InvalidConfig("Duplicate patch archive filename".into()));
+            }
+            let checksum = fields.get(1).map(|s| (*s).to_ascii_lowercase());
+            if let Some(value) = &checksum {
+                if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
+                    return Err(Error::InvalidConfig("Malformed patch SHA-256".into()));
+                }
+            }
+            let size = match fields.get(2) {
+                Some(value) => {
+                    let n: u64 = value.parse().map_err(|_| Error::InvalidConfig(
+                        "Patch size is not an integer".into()
+                    ))?;
+                    if n == 0 {
+                        return Err(Error::InvalidConfig("Patch size must be positive".into()));
+                    }
+                    Some(n)
+                }
+                None => None,
             };
-            
-            patches.push(PatchInfo { filename, checksum, size });
+            patches.push(PatchInfo { filename: filename.into(), checksum, size });
         }
-        
         Ok(patches)
     }
-    
-    pub async fn verify_checksum(&self, file_path: &Path, expected: &str) -> Result<bool> {
-        if !self.config.patcher.verify_checksums {
-            return Ok(true);
-        }
 
+    pub async fn verify_checksum(&self, file_path: &Path, expected: &str) -> Result<bool> {
+        // When a manifest supplies a digest it must always be verified,
+        // even if the administrator allows older digest-less feeds.
         // Streaming hash — avoids loading the entire patch (potentially GBs) into RAM.
         let mut file = File::open(file_path).await?;
         let mut hasher = Sha256::new();
@@ -328,6 +379,56 @@ fn tmp_path_for(destination: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    #[test]
+    fn parses_real_rpatchur_indexed_manifest_in_order() {
+        let patches = Downloader::parse_patch_list(
+            "// old disabled patch\n\
+             10002 turkuaz-2022-hybrid-f45e97b320f6.thor\n\
+             10021 turkuaz-2022-hybrid-8cfc3211f8eb.thor\n"
+        ).unwrap();
+        assert_eq!(patches.len(), 2);
+        assert_eq!(patches[0].filename, "turkuaz-2022-hybrid-f45e97b320f6.thor");
+        assert_eq!(patches[1].filename, "turkuaz-2022-hybrid-8cfc3211f8eb.thor");
+        assert!(patches[0].checksum.is_none());
+    }
+
+    #[test]
+    fn parses_indexed_manifest_with_verified_sha256_and_size() {
+        let digest = "e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8";
+        let manifest = format!("10001 hybrid.thor {digest} 3625083\n");
+        let patches = Downloader::parse_patch_list(&manifest).unwrap();
+        assert_eq!(patches[0].checksum.as_deref(), Some(digest));
+        assert_eq!(patches[0].size, Some(3625083));
+    }
+
+    #[test]
+    fn refuses_malicious_patch_manifest_rows() {
+        for bad in [
+            "10003 ../escape.thor",
+            "10003 C:\\evil.thor",
+            "10003 good.thor\n10003 new.thor",
+            "10004 first.thor\n10003 earlier.thor",
+            "10003 first.thor\nfirst2.thor",
+            "10001 nice.thor abcdef",
+            "10001 nice.thor e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8 0",
+            "10001 foo.txt",
+            "10001 one.thor\n10002 ONE.thor",
+        ] {
+            assert!(Downloader::parse_patch_list(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn accepts_native_beam_sha256_manifests() {
+        let digest = "e18d5368f44feaa1569c1b2f7893b4d51167bd6bb03ab93e4d6ae108a147b2c8";
+        let patches = Downloader::parse_patch_list(&format!("one.beam {digest} 10"))
+            .unwrap();
+        assert_eq!(patches[0].filename, "one.beam");
+        assert_eq!(patches[0].size, Some(10));
+        assert_eq!(patches[0].checksum.as_deref(), Some(digest));
+    }
 
     #[test]
     fn tmp_path_appends_part_extension() {

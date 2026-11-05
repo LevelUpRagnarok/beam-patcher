@@ -1,0 +1,40 @@
+# QA-only GRF AEAD envelope and strict failure-mode regressions.
+# This workflow NEVER uploads a GRF/patch, publishes assets or embeds secrets.
+name: GRF Protection Offline QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - "beam-formats/src/grf.rs"
+      - "beam-formats/src/thor.rs"
+      - "beam-formats/src/protected_grf_qa.rs"
+      - "beam-formats/src/lib.rs"
+      - "beam-formats/Cargo.toml"
+      - ".github/workflows/grf-protection-qa.yml"
+  pull_request:
+    paths:
+      - "beam-formats/src/grf.rs"
+      - "beam-formats/src/thor.rs"
+      - "beam-formats/src/protected_grf_qa.rs"
+      - "beam-formats/src/lib.rs"
+      - "beam-formats/Cargo.toml"
+      - ".github/workflows/grf-protection-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  grf-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Protected GRF authenticated roundtrip and simulated patch/reseal
+        run: cargo test -p beam-formats protected_grf_qa -- --nocapture
+      - name: Reject unsupported encrypted GRF versions before writes
+        run: cargo test -p beam-formats protected_version_rejection_tests -- --nocapture
+      - name: Existing standard GRF and BEAM format regressions
+        run: cargo test -p beam-formats --lib

@@ -221,6 +221,13 @@ updater:
   # false = notify user and ask permission
   auto_update: false
 
+  # This fork belongs to LevelUpGT. Do not silently use beamguides/beam-patcher
+  # as the self-update source. No release/automatic update is authorized here.
+  github_repo:
+    owner: "LevelUpGT"
+    name: "beam-patcher"
+    bin_name: "beam-patcher"
+
 # ============================================================================
 # PATCH FORMAT SUPPORT
 # ============================================================================
@@ -228,7 +235,7 @@ updater:
 #
 # 1. BEAM (.beam) - Native format
 #    - Fastest performance
-#    - Zstd compression (better than Zlib)
+#    - Zlib compression (BEAM v1; not encrypted)
 #    - MD5 verification built-in
 #    - Recommended for new servers
 #
