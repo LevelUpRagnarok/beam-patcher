@@ -2,7 +2,7 @@
 Dosya Yolu: docs/INSTALLER-STRATEGY-TURKUAZ.md
 Amac: Beam QA paketlemesinden TurkuazInstaller'a guvenli gecis plani ve kabul sinirlari
 Modul - Markdown documentation
-Version: 0.3.0-candidate
+Version: 0.3.1-candidate
 Aciklama: Inno/NSIS tekli dagitimi yasak; Turkuaz signed primary gate tamamlanmadan paylasim yok
 Bagimli Oldugu Katman: installer/windows/BeamPatcher-QA.iss | TurkuazLabs/TurkuazInstaller/docs/PROJECT_INTEGRATION.md
 -->
@@ -89,6 +89,22 @@ its parsing, tamper and metadata-size tests do not prove a signed
 Turkuaz product. The protected build-both-and-gate still needs an
 explicit dispatch, independently provisioned real signing/trust and
 native product acceptance. A green PR/negative test is NOT a release.
+
+## Pinned upstream provenance - 2026-11-05
+
+The dual installer checkout is pinned to TurkuazInstaller Community commit
+`1048931bf7498ab4d4440414c4463e6ee5e7421e` and `tools/verify_installer_pair.py`
+now requires `turkuaz_source_sha` in the protected evidence to match that
+**exact** commit. A 40-character but unrelated SHA no longer passes.
+The same source SHA is included in the resulting structural gate report.
+A source-pin change must update the reviewed checkout, verifier, tests and
+signed Windows acceptance together; it is not approved by editing evidence.
+
+The pinned upstream revision is the legacy .NET Community integration, while
+upstream `main` has a newer Rust source tree. This branch deliberately
+retains the tested pin, **not** a claim that the new Rust installer has
+passed Beam product integration. Rust installer adoption requires its own
+separate compatibility and native Windows signing/E2E acceptance.
 
 ## Required work before switching Beam installers
 

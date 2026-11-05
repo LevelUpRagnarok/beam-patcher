@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/verify_installer_pair.py
 # Amac: BURAK-INS-001 dual-output installer metadata/byte ve paylasim kapi kontrati
 # Modul - Python / QA policy checker
-# Version: 1.0.0-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Identity/size/hash/report denetler; native CMS/AuthentiCode/Velopack E2E yerine gecmez
 # Bagimli Oldugu Katman: docs/INSTALLER-STRATEGY-TURKUAZ.md | installer/windows
 
@@ -17,6 +17,11 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+
+# Supply-chain identity: matches the explicit checkout ref in
+# .github/workflows/dual-installer-policy.yml. Change both only in a
+# reviewed, separately tested upstream integration update.
+PINNED_TURKUAZ_SOURCE_SHA = "1048931bf7498ab4d4440414c4463e6ee5e7421e"
 
 ROLE_FILES = {
     "turkuaz_bootstrapper": "primary/TurkuazInstaller.Bootstrapper.exe",
@@ -56,6 +61,8 @@ def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> 
     ensure(metadata.get("schema") == "levelupgt.dual-installer-proof.v1",
            "unsupported evidence schema")
     ensure(metadata.get("source_sha") == source_sha, "source commit mismatch")
+    ensure(metadata.get("turkuaz_source_sha") == PINNED_TURKUAZ_SOURCE_SHA,
+           "upstream Turkuaz source commit does not match pinned checkout")
     ensure(metadata.get("version") == version, "version mismatch")
     ensure(metadata.get("architecture") == "win-x64", "only pinned win-x64 is accepted")
     ensure(metadata.get("product_id") == "levelupgt.beampatcher.qa",
@@ -89,8 +96,6 @@ def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> 
     # signer pinning and Windows E2E are separately required by the workflow.
     ensure("TurkuazInstaller.Bootstrapper" in ROLE_FILES["turkuaz_bootstrapper"],
            "first-party bootstrapper identity invalid")
-    ensure(metadata.get("turkuaz_source_sha") and len(metadata["turkuaz_source_sha"]) == 40,
-           "exact upstream Turkuaz version/commit not supplied")
     ensure(metadata.get("signed_production_binary") is True,
            "unsigned Turkuaz bootstrapper is not a distributable primary")
     ensure(metadata.get("signed_cms_manifest") is True,
@@ -100,6 +105,7 @@ def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> 
     return {
         "schema": "levelupgt.dual-installer-gate.v1",
         "source_sha": source_sha,
+        "turkuaz_source_sha": PINNED_TURKUAZ_SOURCE_SHA,
         "version": version,
         "primary": actual["turkuaz_bootstrapper"],
         "fallback_private": {"sha256": actual["nsis_backup"]["sha256"]},

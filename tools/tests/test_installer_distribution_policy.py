@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
 # Amac: BURAK-INS-001 primary ve backup dagitim bypass negatif regresyonlari
 # Modul - Python unittest
-# Version: 1.1.0-candidate
+# Version: 1.2.0-candidate
 # Aciklama: Degisen manifest, eksik sidecar, farkli SHA, yanlış rol ve standalone upload reddi
 # Bagimli Oldugu Katman: tools/verify_installer_pair.py | tools/check_installer_workflows.py
 
@@ -16,7 +16,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from verify_installer_pair import ROLE_FILES, REQUIRED_ACCEPTANCE, verify  # noqa: E402
+from verify_installer_pair import (  # noqa: E402
+    PINNED_TURKUAZ_SOURCE_SHA, ROLE_FILES, REQUIRED_ACCEPTANCE, verify,
+)
 from check_installer_workflows import policy_errors  # noqa: E402
 
 SHA = "a" * 40
@@ -36,7 +38,7 @@ class InstallerDistributionContractTests(unittest.TestCase):
             pinned[role] = hashlib.sha256(body).hexdigest()
         self.data = {
             "schema": "levelupgt.dual-installer-proof.v1",
-            "source_sha": SHA, "turkuaz_source_sha": "b" * 40,
+            "source_sha": SHA, "turkuaz_source_sha": PINNED_TURKUAZ_SOURCE_SHA,
             "version": VERSION, "architecture": "win-x64",
             "product_id": "levelupgt.beampatcher.qa",
             "primary_role": "turkuazinstaller", "fallback_role": "nsis-backup-only",
@@ -58,6 +60,22 @@ class InstallerDistributionContractTests(unittest.TestCase):
         self.assertEqual(result["gate"], "PASS")
         self.assertTrue(result["primary_download_only"])
         self.assertNotIn("path", result["fallback_private"])
+
+    def test_upstream_turkuaz_commit_must_equal_pinned_checkout(self):
+        workflow = (ROOT / ".github/workflows/dual-installer-policy.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(f"ref: {PINNED_TURKUAZ_SOURCE_SHA}", workflow)
+        original = self.data["turkuaz_source_sha"]
+        for invalid in ("b" * 40, "", None, original[:-1] + "0"):
+            with self.subTest(invalid=invalid):
+                self.data["turkuaz_source_sha"] = invalid
+                with self.assertRaisesRegex(ValueError, "upstream Turkuaz source commit"):
+                    self.verify()
+        self.data["turkuaz_source_sha"] = original
+        self.assertEqual(
+            self.verify()["turkuaz_source_sha"], PINNED_TURKUAZ_SOURCE_SHA
+        )
 
     def test_missing_primary_or_nsis_is_rejected(self):
         for role in ("turkuaz_bootstrapper", "nsis_backup", "manifest_detached_signature"):
