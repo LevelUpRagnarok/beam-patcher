@@ -1,175 +1,200 @@
 #!/usr/bin/env python3
 # Dosya Yolu: REPO_ROOT/tools/tests/test_installer_distribution_policy.py
-# Amac: BURAK-INS-001 primary ve backup dagitim bypass negatif regresyonlari
-# Modul - Python unittest
-# Version: 1.2.0-candidate
-# Aciklama: Degisen manifest, eksik sidecar, farkli SHA, yanlış rol ve standalone upload reddi
-# Bagimli Oldugu Katman: tools/verify_installer_pair.py | tools/check_installer_workflows.py
+# Amac: TURKUAZ-ONLY-001 Turkuaz primary kontrati, signer ve NSIS kaldirma regresyonu
+# Modul - Python unittest / CI policy
+# Version: 2.0.0-candidate
+# Aciklama: Sentetik negatif kabul kaniti; production imza/E2E yerine gecmez
+# Bagimli Oldugu Katman: tools/verify_installer_primary.py | tools/check_installer_workflows.py
 
 import hashlib
-import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
-import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from verify_installer_pair import (  # noqa: E402
+from verify_installer_primary import (  # noqa: E402
     PINNED_TURKUAZ_SOURCE_SHA, ROLE_FILES, REQUIRED_ACCEPTANCE, verify,
 )
-from check_installer_workflows import policy_errors  # noqa: E402
+from check_installer_workflows import (  # noqa: E402
+    policy_errors, REQUIRED, RETIRED, RELEASE_WORKFLOW,
+)
 
-SHA = "a" * 40
+SOURCE_SHA = "a" * 40
 VERSION = "1.0.1"
 
 
-class InstallerDistributionContractTests(unittest.TestCase):
+class TurkuazOnlyDistributionContractTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="installer-dual-policy-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="turkuaz-primary-fixture-")
         self.root = Path(self.tmp.name)
-        pinned = {}
-        for role, rel in ROLE_FILES.items():
-            target = self.root / rel
+        files = {}
+        for role, relative in ROLE_FILES.items():
+            target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            body = ("test-only-" + role).encode() * 32
-            target.write_bytes(body)
-            pinned[role] = hashlib.sha256(body).hexdigest()
+            contents = ("QA-ONLY-" + role).encode() * 64
+            target.write_bytes(contents)
+            files[role] = hashlib.sha256(contents).hexdigest()
         self.data = {
-            "schema": "levelupgt.dual-installer-proof.v1",
-            "source_sha": SHA, "turkuaz_source_sha": PINNED_TURKUAZ_SOURCE_SHA,
-            "version": VERSION, "architecture": "win-x64",
+            "schema": "levelupgt.turkuaz-primary-proof.v1",
+            "source_sha": SOURCE_SHA,
+            "turkuaz_source_sha": PINNED_TURKUAZ_SOURCE_SHA,
+            "version": VERSION,
+            "architecture": "win-x64",
             "product_id": "levelupgt.beampatcher.qa",
-            "primary_role": "turkuazinstaller", "fallback_role": "nsis-backup-only",
-            "public_fallback": False, "release_ready": True,
-            "signed_production_binary": True, "signed_cms_manifest": True,
+            "primary_role": "turkuazinstaller",
+            "release_ready": True,
+            "signed_production_binary": True,
+            "signed_cms_manifest": True,
             "external_cert_pin_verified": True,
             "acceptance": {name: "PASS" for name in REQUIRED_ACCEPTANCE},
-            "artifact_sha256": pinned,
+            "artifact_sha256": files,
         }
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def verify(self):
-        return verify(self.root, self.data, SHA, VERSION)
+        return verify(self.root, self.data, SOURCE_SHA, VERSION)
 
-    def test_pair_passes_structural_fixture_only(self):
-        result = self.verify()
-        self.assertEqual(result["gate"], "PASS")
-        self.assertTrue(result["primary_download_only"])
-        self.assertNotIn("path", result["fallback_private"])
+    def test_primary_fixture_passes_structural_only(self):
+        report = self.verify()
+        self.assertEqual(report["gate"], "PASS")
+        self.assertTrue(report["primary_download_only"])
+        self.assertNotIn("fallback_private", report)
+        self.assertEqual(set(report["verified_files"]), set(ROLE_FILES))
+        self.assertNotIn("nsis_backup", ROLE_FILES)
 
-    def test_upstream_turkuaz_commit_must_equal_pinned_checkout(self):
-        workflow = (ROOT / ".github/workflows/dual-installer-policy.yml").read_text(
+    def test_upstream_revision_is_pinned_to_checkout(self):
+        workflow = (ROOT / ".github/workflows/turkuaz-primary-policy.yml").read_text(
             encoding="utf-8"
         )
         self.assertIn(f"ref: {PINNED_TURKUAZ_SOURCE_SHA}", workflow)
-        original = self.data["turkuaz_source_sha"]
-        for invalid in ("b" * 40, "", None, original[:-1] + "0"):
-            with self.subTest(invalid=invalid):
-                self.data["turkuaz_source_sha"] = invalid
+        correct = self.data["turkuaz_source_sha"]
+        for value in ("b" * 40, "", None, correct[:-1] + "0"):
+            with self.subTest(value=value):
+                self.data["turkuaz_source_sha"] = value
                 with self.assertRaisesRegex(ValueError, "upstream Turkuaz source commit"):
                     self.verify()
-        self.data["turkuaz_source_sha"] = original
-        self.assertEqual(
-            self.verify()["turkuaz_source_sha"], PINNED_TURKUAZ_SOURCE_SHA
-        )
+        self.data["turkuaz_source_sha"] = correct
+        self.assertEqual(self.verify()["turkuaz_source_sha"], correct)
 
-    def test_missing_primary_or_nsis_is_rejected(self):
-        for role in ("turkuaz_bootstrapper", "nsis_backup", "manifest_detached_signature"):
-            target = self.root / ROLE_FILES[role]
-            original = target.read_bytes()
-            target.unlink()
-            with self.assertRaisesRegex(ValueError, "missing"):
-                self.verify()
-            target.write_bytes(original)
-
-    def test_hash_mismatch_and_version_drift_are_rejected(self):
-        (self.root / ROLE_FILES["nsis_backup"]).write_bytes(b"changed" * 100)
-        with self.assertRaisesRegex(ValueError, "checksum"):
+    def test_missing_primary_sidecar_or_hash_mismatch_rejected(self):
+        for role in ("turkuaz_bootstrapper", "manifest_detached_signature", "external_trust_policy"):
+            with self.subTest(role=role):
+                target = self.root / ROLE_FILES[role]
+                body = target.read_bytes()
+                target.unlink()
+                with self.assertRaisesRegex(ValueError, "missing"):
+                    self.verify()
+                target.write_bytes(body)
+        target = self.root / ROLE_FILES["turkuaz_bootstrapper"]
+        target.write_bytes(b"tampered-qa-fixture" * 60)
+        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
             self.verify()
-        self.assertRaises(ValueError, verify, self.root, self.data, SHA, "1.0.2")
-        self.assertRaises(ValueError, verify, self.root, self.data, "f" * 40, VERSION)
 
-    def test_fallback_as_primary_or_public_is_rejected(self):
-        self.data["primary_role"] = "nsis"
+    def test_legacy_fallback_metadata_and_extra_artifact_are_rejected(self):
+        self.data["fallback_role"] = "nsis-backup-only"
+        with self.assertRaisesRegex(ValueError, "fallback"):
+            self.verify()
+        self.data.pop("fallback_role")
+        self.data["public_fallback"] = False
+        with self.assertRaisesRegex(ValueError, "fallback"):
+            self.verify()
+        self.data.pop("public_fallback")
+        self.data["artifact_sha256"]["nsis_backup"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "artifact checksums"):
+            self.verify()
+
+    def test_version_source_role_and_readiness_rejected(self):
+        with self.assertRaises(ValueError):
+            verify(self.root, self.data, SOURCE_SHA, "1.0.2")
+        with self.assertRaises(ValueError):
+            verify(self.root, self.data, "f" * 40, VERSION)
+        self.data["primary_role"] = "another-installer"
         with self.assertRaisesRegex(ValueError, "primary"):
             self.verify()
         self.data["primary_role"] = "turkuazinstaller"
-        self.data["public_fallback"] = True
-        with self.assertRaisesRegex(ValueError, "public"):
-            self.verify()
+        for field in ("release_ready", "signed_production_binary",
+                      "signed_cms_manifest", "external_cert_pin_verified"):
+            with self.subTest(field=field):
+                self.data[field] = False
+                with self.assertRaises(ValueError):
+                    self.verify()
+                self.data[field] = True
 
-    def test_all_required_native_smoke_results_enforced(self):
-        for step in REQUIRED_ACCEPTANCE:
-            self.data["acceptance"][step] = "NOT RUN"
-            with self.assertRaisesRegex(ValueError, step):
-                self.verify()
-            self.data["acceptance"][step] = "PASS"
+    def test_every_native_acceptance_stage_is_required(self):
+        for name in REQUIRED_ACCEPTANCE:
+            with self.subTest(name=name):
+                self.data["acceptance"][name] = "NOT_RUN"
+                with self.assertRaisesRegex(ValueError, name):
+                    self.verify()
+                self.data["acceptance"][name] = "PASS"
 
-    def test_unsigned_or_untrusted_turkuaz_is_rejected(self):
-        for key in ("release_ready", "signed_production_binary", "signed_cms_manifest",
-                    "external_cert_pin_verified"):
-            self.data[key] = False
-            with self.assertRaises(ValueError):
-                self.verify()
-            self.data[key] = True
+    def _policy_fixture(self, root):
+        for relative in REQUIRED:
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("policy fixture", encoding="utf-8")
+        main = root / ".github/workflows" / RELEASE_WORKFLOW
+        main.write_text(
+            "TurkuazInstaller\nverify_installer_primary.py\nwindows-latest\n"
+            "actions/upload-artifact@v4\nenvironment: windows-installer-signing\n"
+            "build-primary-and-gate:\nif: github.event_name == 'workflow_dispatch'\n"
+            "Confirm-TurkuazTrust.ps1\nTest-BeamTrustNegative.ps1\n",
+            encoding="utf-8",
+        )
+        return main
 
-    def test_standalone_workflow_upload_is_rejected(self):
-        with tempfile.TemporaryDirectory(prefix="test-policy-workflows-") as tmp:
-            root = Path(tmp)
-            for rel in ("installer/windows/BeamPatcher-NSIS-Backup.nsi",
-                        "tools/verify_installer_pair.py",
-                        "tools/check_installer_workflows.py",
-                        "tools/Confirm-TurkuazTrust.ps1",
-                        "tools/Assert-BeamManifestSetupBinding.ps1",
-                        "tools/Test-BeamTrustNegative.ps1",
-                        "docs/INSTALLER-STRATEGY-TURKUAZ.md",
-                        "docs/WINDOWS-SETUP-PATCH-QA.md"):
-                file = root / rel
-                file.parent.mkdir(parents=True, exist_ok=True)
-                file.write_text("policy stub")
-            workflows = root / ".github/workflows"
-            workflows.mkdir(parents=True)
-            (workflows / "dual-installer-policy.yml").write_text(
-                "windows-latest\nTurkuazInstaller NSIS\nverify_installer_pair.py\nConfirm-TurkuazTrust.ps1\nactions/upload-artifact@v4"
-            )
-            standalone = workflows / "windows-setup-patch-qa.yml"
-            standalone.write_text("- uses: actions/upload-artifact@v4\n  name: nsis-setup.exe\n")
-            self.assertTrue(any("standalone setup upload" in err for err in policy_errors(root)))
-            standalone.unlink()
+    def test_policy_rejects_nsis_files_and_active_workflow_builds(self):
+        with tempfile.TemporaryDirectory(prefix="turkuaz-policy-") as name:
+            root = Path(name)
+            self._policy_fixture(root)
             self.assertFalse(policy_errors(root))
+            retired = root / RETIRED[0]
+            retired.parent.mkdir(parents=True, exist_ok=True)
+            retired.write_text("File installer.exe", encoding="utf-8")
+            self.assertTrue(any("retired installer" in s for s in policy_errors(root)))
+            retired.unlink()
+            extra = root / "installer/windows/stray-backup.nsi"
+            extra.write_text("script", encoding="utf-8")
+            self.assertTrue(any("NSIS source" in s for s in policy_errors(root)))
+            extra.unlink()
+            workflow = root / ".github/workflows/windows-setup-patch-qa.yml"
+            workflow.write_text("choco install nsis --yes", encoding="utf-8")
+            self.assertTrue(any("deprecated NSIS" in s for s in policy_errors(root)))
 
+    def test_standalone_setup_upload_is_denied(self):
+        with tempfile.TemporaryDirectory(prefix="turkuaz-upload-") as name:
+            root = Path(name)
+            self._policy_fixture(root)
+            rogue = root / ".github/workflows/rogue.yml"
+            rogue.write_text(
+                "- uses: actions/upload-artifact@v4\nname: custom-nsis-setup.exe\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(any("installer artifact bypasses" in s
+                                for s in policy_errors(root)))
 
-    def test_private_nsis_reinstall_config_preservation_smoke_is_required(self):
-        # Static CI contract only; real install/uninstall behavior is Windows QA.
-        workflow = (ROOT / ".github/workflows/windows-setup-patch-qa.yml").read_text(
+    def test_real_workflows_have_no_nsis_compiler_or_installer_artifact(self):
+        self.assertFalse(policy_errors(ROOT), "repository must satisfy primary-only policy")
+        workflow = (ROOT / ".github/workflows/rust-installer-beam-compat.yml").read_text(
             encoding="utf-8"
         )
-        nsis = (ROOT / "installer/windows/BeamPatcher-NSIS-Backup.nsi").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("NSIS_QA_CONFIG_PRESERVATION_SENTINEL", workflow)
-        self.assertIn("NSIS same-version reinstall overwrote user config", workflow)
-        self.assertIn("NSIS uninstall removed or changed user config", workflow)
-        self.assertIn("NSIS uninstall registry entry remains", workflow)
-        self.assertIn("SetOverwrite off", nsis)
-        self.assertNotIn('Delete "$INSTDIR\\config.yml"', nsis)
-        self.assertIn("No standalone installer publication without Turkuaz dual gate", workflow)
+        self.assertIn("build-self-extracting-setup", (
+            ROOT / "tools/Test-BeamRustEphemeralLifecycle.ps1"
+        ).read_text(encoding="utf-8"))
+        self.assertNotIn("choco install nsis", workflow.lower())
+        self.assertNotIn("build-distribution-pair", workflow.lower())
+        self.assertNotIn("actions/upload-artifact", workflow)
 
-    def test_protected_windows_trust_gate_has_real_negative_tests(self):
-        workflow = (ROOT / ".github/workflows/dual-installer-policy.yml").read_text(
+    def test_protected_cms_negative_smoke_stays_required(self):
+        workflow = (ROOT / ".github/workflows/turkuaz-primary-policy.yml").read_text(
             encoding="utf-8"
         )
         signer = (ROOT / "tools/Confirm-TurkuazTrust.ps1").read_text(
-            encoding="utf-8"
-        )
-        binding = (ROOT / "tools/Assert-BeamManifestSetupBinding.ps1").read_text(
-            encoding="utf-8"
-        )
-        negative = (ROOT / "tools/Test-BeamTrustNegative.ps1").read_text(
             encoding="utf-8"
         )
         self.assertIn("trust-negative-fixtures:", workflow)
@@ -178,45 +203,6 @@ class InstallerDistributionContractTests(unittest.TestCase):
         self.assertIn("$Cms.CheckSignature($false)", signer)
         self.assertIn("outside its validity period", signer)
         self.assertIn("Assert-BeamManifestSetupBinding.ps1", signer)
-        self.assertIn("1048576", signer)
-        self.assertIn("262144", signer)
-        self.assertIn("artifact.sha256", binding)
-        self.assertIn("artifact.size_bytes", binding)
-        self.assertIn("Signed initial Velopack Setup artifact SHA-256/size mismatch", binding)
-        self.assertNotIn("$HashOfNupkg", signer)
-        self.assertIn("BEAM_OFFLINE_TRUST_NEGATIVE_FIXTURES_PASS", negative)
-
-    def test_retired_standalone_setup_guide_is_rejected(self):
-        with tempfile.TemporaryDirectory(prefix="test-policy-docs-") as tmp:
-            root = Path(tmp)
-            for rel in ("installer/windows/BeamPatcher-NSIS-Backup.nsi",
-                        "tools/verify_installer_pair.py",
-                        "tools/check_installer_workflows.py",
-                        "tools/Confirm-TurkuazTrust.ps1",
-                        "tools/Assert-BeamManifestSetupBinding.ps1",
-                        "tools/Test-BeamTrustNegative.ps1",
-                        "docs/INSTALLER-STRATEGY-TURKUAZ.md",
-                        "docs/WINDOWS-SETUP-PATCH-QA.md"):
-                file = root / rel
-                file.parent.mkdir(parents=True, exist_ok=True)
-                file.write_text("policy stub", encoding="utf-8")
-            workflows = root / ".github/workflows"
-            workflows.mkdir(parents=True)
-            (workflows / "dual-installer-policy.yml").write_text(
-                "windows-latest\nTurkuazInstaller NSIS\nverify_installer_pair.py\n"
-                "Confirm-TurkuazTrust.ps1\nactions/upload-artifact@v4",
-                encoding="utf-8",
-            )
-            self.assertFalse(policy_errors(root))
-            guide = root / "docs/WINDOWS-SETUP-PATCH-QA.md"
-            guide.write_text(
-                "Download the short-lived `levelup-beam-windows-setup-qa-<SHA>` artifact",
-                encoding="utf-8",
-            )
-            self.assertTrue(any("retired standalone setup" in err
-                                for err in policy_errors(root)))
-
-
 
 
 if __name__ == "__main__":

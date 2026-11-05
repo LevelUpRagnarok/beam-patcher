@@ -1,17 +1,17 @@
-# Dosya Yolu: REPO_ROOT/.github/workflows/dual-installer-policy.yml
-# Amac: BURAK-INS-001 Turkuaz primary ve NSIS private fallback'u tek run'da uretme/gate
-# Modul - GitHub Actions / Windows dual installer
-# Version: 1.1.0-candidate
-# Aciklama: Imza/trust/urun E2E olmadan artifact paylasmaz; Inno ve tekli NSIS yok
-# Bagimli Oldugu Katman: tools/verify_installer_pair.py | TurkuazLabs/TurkuazInstaller
+# Dosya Yolu: REPO_ROOT/.github/workflows/turkuaz-primary-policy.yml
+# Amac: TURKUAZ-ONLY-001 sadece TurkuazInstaller primary icin fail-closed dagitim kapisi
+# Modul - GitHub Actions / Windows Turkuaz-only installer
+# Version: 2.0.0-candidate
+# Aciklama: Imza/trust/yerel E2E olmadan primary dagitmaz; ikinci installer yok
+# Bagimli Oldugu Katman: tools/verify_installer_primary.py | TurkuazLabs/TurkuazInstaller
 
-name: Beam Dual Installer (Turkuaz Primary, NSIS Private)
+name: Beam TurkuazInstaller Primary Only
 
 on:
   pull_request:
     paths:
       - "installer/windows/**"
-      - "tools/verify_installer_pair.py"
+      - "tools/verify_installer_primary.py"
       - "tools/check_installer_workflows.py"
       - "tools/Confirm-TurkuazTrust.ps1"
       - "tools/Assert-BeamManifestSetupBinding.ps1"
@@ -26,7 +26,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: beam-dual-installer-${{ github.ref }}
+  group: beam-turkuaz-primary-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Refuse standalone Inno or NSIS distribution
+      - name: Enforce only TurkuazInstaller primary distribution
         run: python tools/check_installer_workflows.py
       - name: Test installer proof gate negative cases
         run: python -m unittest discover -s tools/tests -p 'test_installer_distribution_policy.py' -v
@@ -59,7 +59,7 @@ jobs:
   # Explicitly dispatched only. A PR does NOT produce/share a setup file.
   # A signed Turkuaz product bundle MUST come from a separately secured signing
   # and real installer acceptance process. Missing materials -> fail closed.
-  build-both-and-gate:
+  build-primary-and-gate:
     if: github.event_name == 'workflow_dispatch'
     needs: [policy-contract, trust-negative-fixtures]
     runs-on: windows-latest
@@ -96,8 +96,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $stage = Join-Path (Get-Location).Path 'build/dual-stage'
-          $primary = Join-Path (Get-Location).Path 'build/dual-pair/primary'
+          $stage = Join-Path (Get-Location).Path 'build/turkuaz-stage'
+          $primary = Join-Path (Get-Location).Path 'build/turkuaz-primary/primary'
           New-Item -ItemType Directory -Force -Path $stage, $primary | Out-Null
           Copy-Item target/release/beam-patcher.exe "$stage/beam-patcher.exe"
           Copy-Item installer/windows/config.qa.yml "$stage/config.yml"
@@ -106,7 +106,7 @@ jobs:
           dotnet tool install vpk --tool-path $tools --version 1.2.161
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $vpk = Join-Path $tools 'vpk.exe'
-          $out = Join-Path (Get-Location).Path 'build/dual-vpk'
+          $out = Join-Path (Get-Location).Path 'build/turkuaz-vpk'
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           & $vpk --legacyConsole true --yes true --skip-updates true pack --runtime win-x64 --packId levelupgt.beampatcher.qa --packTitle "Turkuaz Ragnarok Online QA" --packVersion 1.0.1 --packDir $stage --mainExe beam-patcher.exe --outputDir $out --delta none --skipVeloAppCheck true
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -133,39 +133,10 @@ jobs:
           $joined = Join-Path (Get-Location).Path 'build/turkuaz-unsigned/combined'
           & (Join-Path $upstream 'tools/New-CombinedDistribution.ps1') -BootstrapRoot (Join-Path $publish 'bootstrap') -WinUiRoot (Join-Path $publish 'winui') -CliRoot (Join-Path $publish 'cli') -OutputRoot $joined
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $primary = Join-Path (Get-Location).Path 'build/dual-pair/primary'
+          $primary = Join-Path (Get-Location).Path 'build/turkuaz-primary/primary'
           Copy-Item -LiteralPath (Join-Path $joined 'TurkuazInstaller.Bootstrapper.exe') -Destination $primary
           Copy-Item -LiteralPath (Join-Path $joined 'app') -Destination (Join-Path $primary 'app') -Recurse
           Copy-Item -LiteralPath (Join-Path $joined 'cli') -Destination (Join-Path $primary 'cli') -Recurse
-      - name: Build NSIS BACKUP from exact same Beam source (never upload separately)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $nsis = Join-Path "${env:ProgramFiles(x86)}" 'NSIS/makensis.exe'
-          if (-not (Test-Path $nsis)) {
-            choco install nsis --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          if (-not (Test-Path $nsis)) { throw 'NSIS unavailable' }
-          $out = Join-Path (Get-Location).Path 'build/dual-pair/backup'
-          New-Item -ItemType Directory -Force -Path $out | Out-Null
-          $exe = (Resolve-Path target/release/beam-patcher.exe).Path
-          & $nsis '/V2' "/DBeamExe=$exe" "/DNsisOut=$out" 'installer/windows/BeamPatcher-NSIS-Backup.nsi'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $setup = Join-Path $out 'TurkuazRagnarokOnline-NSIS-BACKUP-QA-Setup.exe'
-          if (-not (Test-Path $setup)) { throw 'NSIS backup output missing' }
-          $installed = Join-Path $env:LOCALAPPDATA 'Programs/TurkuazSoft/Turkuaz Ragnarok Online QA-NSIS-Backup'
-          $p = Start-Process -FilePath $setup -ArgumentList '/S' -PassThru -Wait
-          if ($p.ExitCode -ne 0) { throw 'NSIS backup install failed' }
-          $exeInstalled = Join-Path $installed 'beam-patcher.exe'
-          $qaConfig = Join-Path $installed 'config.yml'
-          if (-not (Test-Path $exeInstalled) -or -not (Test-Path $qaConfig)) { throw 'NSIS backup incomplete' }
-          if (-not (Get-Content -LiteralPath $qaConfig -Raw).Contains('qa_only: true')) { throw 'Unsafe NSIS profile' }
-          $uninstall = Join-Path $installed 'Uninstall-NSIS-Backup.exe'
-          $q = Start-Process -FilePath $uninstall -ArgumentList '/S' -PassThru -Wait
-          if ($q.ExitCode -ne 0 -or (Test-Path $exeInstalled)) { throw 'NSIS backup uninstall failed' }
-          Write-Output 'BURAK-INS-001_PRIVATE_NSIS_INSTALL_UNINSTALL_OK'
-          # No NSIS artifacts are uploaded or released from this job.
       - name: Verify trusted Turkuaz signing, detached manifest and native E2E proof
         shell: pwsh
         env:
@@ -176,10 +147,10 @@ jobs:
           # Windows signing environment. A missing or unverifiable bundle is FAIL.
           $trusted = $env:VERIFIED_SIGNED_BUNDLE
           if ([string]::IsNullOrWhiteSpace($trusted) -or -not (Test-Path -LiteralPath $trusted -PathType Container)) {
-            throw 'BURAK-INS-001: NO TRUSTED TURKUAZ SIGNER / E2E BUNDLE. Pair is NOT shareable.'
+            throw 'TURKUAZ-ONLY-001: NO TRUSTED TURKUAZ SIGNER / E2E BUNDLE. Primary is NOT shareable.'
           }
-          $primary = Join-Path (Get-Location).Path 'build/dual-pair/primary'
-          foreach ($item in @('installer-manifest.yml', 'installer-manifest.yml.p7s', 'manifest-trust.yml', 'dual-e2e.json')) {
+          $primary = Join-Path (Get-Location).Path 'build/turkuaz-primary/primary'
+          foreach ($item in @('installer-manifest.yml', 'installer-manifest.yml.p7s', 'manifest-trust.yml', 'turkuaz-primary-e2e.json')) {
             $src = Join-Path $trusted $item
             if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { throw "Required signed evidence missing: $item" }
             Copy-Item -LiteralPath $src -Destination (Join-Path $primary $item)
@@ -197,18 +168,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Real CMS/Authenticode trust verification failed' }
           # A signed-provenance E2E run must be validated in addition to
           # this cryptographic check; JSON cannot alone approve a release.
-          $evidence = Join-Path $trusted 'dual-e2e.json'
-          Copy-Item -LiteralPath $evidence -Destination (Join-Path (Get-Location).Path 'build/dual-evidence.json')
-      - name: Fail-closed exact hash/role/E2E gate
+          $evidence = Join-Path $trusted 'turkuaz-primary-e2e.json'
+          Copy-Item -LiteralPath $evidence -Destination (Join-Path (Get-Location).Path 'build/turkuaz-evidence.json')
+      - name: Fail-closed single Turkuaz primary hash and native E2E gate
         shell: pwsh
         run: |
-          python tools/verify_installer_pair.py --bundle build/dual-pair --evidence build/dual-evidence.json --source-sha "${{ github.sha }}" --version 1.0.1 --report build/dual-pair/primary/distribution-report.json
+          python tools/verify_installer_primary.py --bundle build/turkuaz-primary --evidence build/turkuaz-evidence.json --source-sha "${{ github.sha }}" --version 1.0.1 --report build/turkuaz-primary/primary/distribution-report.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Upload only the verified primary TurkuazInstaller files (NOT NSIS)
+      - name: Upload only the verified TurkuazInstaller primary
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: TURKUAZ-PRIMARY-BEAM-QA-${{ github.sha }}
-          path: build/dual-pair/primary/
+          path: build/turkuaz-primary/primary/
           if-no-files-found: error
           retention-days: 3

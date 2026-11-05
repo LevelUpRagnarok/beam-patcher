@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Dosya Yolu: REPO_ROOT/tools/verify_installer_pair.py
-# Amac: BURAK-INS-001 dual-output installer metadata/byte ve paylasim kapi kontrati
+# Dosya Yolu: REPO_ROOT/tools/verify_installer_primary.py
+# Amac: TURKUAZ-ONLY-001 tek birincil kurulum metadata, hash ve kapali yayin kontrati
 # Modul - Python / QA policy checker
-# Version: 1.1.0-candidate
-# Aciklama: Identity/size/hash/report denetler; native CMS/AuthentiCode/Velopack E2E yerine gecmez
-# Bagimli Oldugu Katman: docs/INSTALLER-STRATEGY-TURKUAZ.md | installer/windows
+# Version: 2.0.0-candidate
+# Aciklama: Tek Turkuaz primary icin hash/kimlik; imza ve native E2E ayrica zorunlu
+# Bagimli Oldugu Katman: docs/INSTALLER-STRATEGY-TURKUAZ.md | tools/Confirm-TurkuazTrust.ps1
 
-"""Fail-closed secondary gate for Windows dual-installer artifact metadata.
+"""Fail-closed secondary gate for single TurkuazInstaller primary artifact metadata.
 
 This cannot independently verify CMS or Authenticode signatures. Those must
 have passed the real signed TurkuazInstaller runtime/Windows CI BEFORE use.
@@ -32,7 +32,6 @@ ROLE_FILES = {
     "manifest": "primary/installer-manifest.yml",
     "manifest_detached_signature": "primary/installer-manifest.yml.p7s",
     "external_trust_policy": "primary/manifest-trust.yml",
-    "nsis_backup": "backup/TurkuazRagnarokOnline-NSIS-BACKUP-QA-Setup.exe",
 }
 REQUIRED_ACCEPTANCE = (
     "turkuaz_signed_manifest_and_trust",
@@ -42,23 +41,21 @@ REQUIRED_ACCEPTANCE = (
     "turkuaz_repair",
     "turkuaz_rollback",
     "turkuaz_uninstall",
-    "nsis_install",
-    "nsis_uninstall",
     "user_config_preserved",
 )
 
 
 def ensure(condition, message):
     if not condition:
-        raise ValueError("BURAK-INS-001 FAIL: " + message)
+        raise ValueError("TURKUAZ-ONLY-001 FAIL: " + message)
 
 
 def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> dict:
     root = bundle_root.resolve(strict=True)
-    ensure(root.is_dir(), "pair directory is missing")
+    ensure(root.is_dir(), "primary bundle directory is missing")
     ensure(len(source_sha) == 40 and all(c in "0123456789abcdef" for c in source_sha.lower()),
            "exact 40-hex commit is required")
-    ensure(metadata.get("schema") == "levelupgt.dual-installer-proof.v1",
+    ensure(metadata.get("schema") == "levelupgt.turkuaz-primary-proof.v1",
            "unsupported evidence schema")
     ensure(metadata.get("source_sha") == source_sha, "source commit mismatch")
     ensure(metadata.get("turkuaz_source_sha") == PINNED_TURKUAZ_SOURCE_SHA,
@@ -68,8 +65,8 @@ def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> 
     ensure(metadata.get("product_id") == "levelupgt.beampatcher.qa",
            "permanent QA product ID mismatch")
     ensure(metadata.get("primary_role") == "turkuazinstaller", "primary must be Turkuaz")
-    ensure(metadata.get("fallback_role") == "nsis-backup-only", "NSIS must be backup only")
-    ensure(metadata.get("public_fallback") is False, "NSIS cannot be public/downloadable")
+    ensure("fallback_role" not in metadata and "public_fallback" not in metadata,
+           "unexpected fallback or secondary installer metadata")
     ensure(metadata.get("release_ready") is True,
            "upstream native security/installer E2E gates are not complete")
     results = metadata.get("acceptance")
@@ -103,12 +100,11 @@ def verify(bundle_root: Path, metadata: dict, source_sha: str, version: str) -> 
     ensure(metadata.get("external_cert_pin_verified") is True,
            "external trust pin not verified")
     return {
-        "schema": "levelupgt.dual-installer-gate.v1",
+        "schema": "levelupgt.turkuaz-primary-gate.v1",
         "source_sha": source_sha,
         "turkuaz_source_sha": PINNED_TURKUAZ_SOURCE_SHA,
         "version": version,
         "primary": actual["turkuaz_bootstrapper"],
-        "fallback_private": {"sha256": actual["nsis_backup"]["sha256"]},
         "verified_files": actual,
         "primary_download_only": True,
         "gate": "PASS",
@@ -129,10 +125,10 @@ def main():
         report = verify(args.bundle, evidence, args.source_sha, args.version)
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-        print("BURAK-INS-001 PASS; Turkuaz primary is the only user-facing setup")
+        print("TURKUAZ-ONLY-001 PASS; structurally verified Turkuaz primary (not signing evidence)")
         return 0
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
-        print("BURAK-INS-001 FAIL CLOSED: " + str(exc), file=sys.stderr)
+        print("TURKUAZ-ONLY-001 FAIL CLOSED: " + str(exc), file=sys.stderr)
         return 1
 
 
