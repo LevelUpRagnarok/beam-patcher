@@ -2,7 +2,7 @@
 Dosya Yolu: docs/GRF-PROTECTION-QA.md
 Amac: LevelUpGT custom tdata1.grf koruma prototipinin sinirlari ve sonraki kapilar
 Modul - Markdown
-Version: 0.1.0-experimental
+Version: 0.1.1-experimental
 Aciklama: Gercek 20220406 istemciye yuklenmez; sadece offline Rust QA
 Bagimli Oldugu Katman: beam-formats/src/protected_grf_qa.rs | grf.rs
 -->
@@ -60,6 +60,14 @@ than interpreting ciphertext as zlib, and `Grf::save()` rejects any
 modification of a GRF containing encrypted/unknown entry flags until a
 verified decrypt/re-encrypt writer is implemented. This protects the
 existing game and avoids silently stripping encryption.
+
+Filename encoding boundary: GRF table filenames are accepted only when
+all filename bytes are valid UTF-8. Invalid byte sequences are rejected;
+BeamPatcher does not decode CP949 or replace invalid bytes lossily. Offline
+synthetic tests exercise rejection through `Grf::open()` and confirm the
+source archive stays unchanged without temporary or backup files. This does
+not establish the filename encoding used by the real 20220406 client; byte-
+level client readback and load-order/render smoke remain required.
 
 ## Gates to an actually protected, usable GRF
 
