@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Dosya Yolu: tools/tests/test_levelup_modern_theme.py
-# Amac: LevelUp Modern tema degistirme ve offline QA guvenlik kontratini dogrular
+# Amac: Turkuaz Modern gorunumu ve offline QA guvenlik kontratini dogrular
 # Modul - Python unittest / Node source behavior QA
 # Version: 0.3.1-candidate
 # Aciklama: CSS tema scope, browser-only preview, local preference ve native setup sinirlari

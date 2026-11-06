@@ -9,7 +9,14 @@ use crate::{Config, Error, Result};
 use std::fs;
 use std::path::Path;
 
-pub(crate) const QA_APP_NAME: &str = "LevelUp Games Beam QA";
+pub(crate) const QA_APP_NAME: &str = "Turkuaz Ragnarok Online QA";
+// Legacy identifier is intentionally retained so existing unsigned QA installs
+// cannot escape the isolated workspace guard by upgrading to the new brand.
+pub(crate) const LEGACY_QA_APP_NAME: &str = "LevelUp Games Beam QA";
+
+pub(crate) fn is_qa_app_name(name: &str) -> bool {
+    name == QA_APP_NAME || name == LEGACY_QA_APP_NAME
+}
 const QA_GRF: &str = "levelup-qa.grf";
 
 fn qa_reject(reason: impl AsRef<str>) -> Error {

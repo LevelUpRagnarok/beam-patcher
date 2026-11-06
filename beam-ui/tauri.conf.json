@@ -7,7 +7,7 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "Beam Patcher",
+    "productName": "Turkuaz Ragnarok Online",
     "version": "1.0.1"
   },
   "tauri": {
@@ -17,7 +17,6 @@
         "all": true,
         "request": true,
         "scope": [
-          "https://goatmmo.com/**",
           "https://**",
           "http://**"
         ]
@@ -81,7 +80,7 @@
     },
     "windows": [
       {
-        "title": "LevelUp Games Beam QA (TEST ONLY)",
+        "title": "Turkuaz Ragnarok Online (TEST MODU)",
         "width": 900,
         "height": 620,
         "resizable": false,

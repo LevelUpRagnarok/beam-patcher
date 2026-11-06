@@ -32,12 +32,12 @@ MOCK_TAURI = r"""
   window.__QA_NATIVE_CALLS = calls;
   const config = {
     app: {
-      server_name: "LEVELUP GAMES / OFFLINE QA",
+      server_name: "TURKUAZ RAGNAROK ONLINE / OFFLINE QA",
       version: "0.1.0-qa",
       bgm_autoplay: false,
       video_background_enabled: false,
       limited_items: [],
-      grid_images: ["assets/1.png", "assets/2.png", "assets/3.png", "assets/4.png"],
+      grid_images: ["assets/turkuaz-user-classic-castle.svg", "assets/turkuaz-user-adventurers.svg", "assets/turkuaz-user-poring.svg", "assets/turkuaz-dungeon.svg"],
       social_links: [],
       register_url: null
     },
@@ -54,7 +54,7 @@ MOCK_TAURI = r"""
           case "get_config": return config;
           case "check_initial_setup": return false;
           case "get_news": return [
-            { id: 1, title: "LevelUp Games - offline QA", category: "event", url: "about:blank" },
+            { id: 1, title: "Turkuaz Ragnarok Online - offline QA", category: "event", url: "about:blank" },
             { id: 2, title: "Gorunum temalari", category: "event", url: "about:blank" }
           ];
           case "get_server_status":
@@ -63,7 +63,7 @@ MOCK_TAURI = r"""
             throw new Error("OFFLINE_QA_NO_PATCH_ACCESS");
           case "open_setup": return null;
           case "resolve_resource_path":
-            if (!["assets/1.png", "assets/2.png", "assets/3.png", "assets/4.png"]
+            if (!["assets/turkuaz-user-classic-castle.svg", "assets/turkuaz-user-adventurers.svg", "assets/turkuaz-user-poring.svg", "assets/turkuaz-dungeon.svg"]
                 .includes(args?.path)) {
               throw new Error("OFFLINE_QA_ASSET_DENIED");
             }
