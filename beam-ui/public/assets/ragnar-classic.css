@@ -1,0 +1,411 @@
+/*
+Dosya Yolu: beam-ui/public/assets/ragnar-classic.css
+Amac: Screenshot-referenced legacy THOR style launcher layout for Beam
+Modul - CSS, opt-in UI theme
+Version: 0.1.0-candidate
+Aciklama: Recreates regions, not missing third-party banner image copyrights.
+Bagimli Oldugu Katman: beam-ui/public/index.html | patcher/web/legacy/slider/slide.css
+*/
+
+/* Historical launcher: white window, three left banners, one dominant black
+   content pane, two narrow right previews, dual rainbow tracks and round Start.
+   This theme changes styling only. All actual Beam commands remain unchanged. */
+body.theme-ragnar-classic {
+    --bg: #fff;
+    --panel: #fff;
+    --glass: #fff;
+    --border: #d1d1d1;
+    --border-glow: rgba(80, 167, 163, .2);
+    --blue: #00ccb9;
+    --blue2: #00a89d;
+    --blue-glow: rgba(0, 193, 181, .2);
+    --text: #282828;
+    --text-bright: #121212;
+    --muted: #666;
+    --green: #11bca5;
+    --orange: #dc9f34;
+    background: #fff;
+    color: #272727;
+    font-family: Arial, Tahoma, sans-serif;
+    animation: none;
+}
+
+body.theme-ragnar-classic #video-background,
+body.theme-ragnar-classic .video-overlay {
+    display: none !important;
+}
+
+body.theme-ragnar-classic .header {
+    background: #fff;
+    border: none;
+    box-shadow: none;
+    height: 36px;
+    padding: 0 12px;
+}
+body.theme-ragnar-classic .header::before { display: none; }
+body.theme-ragnar-classic .logo-text {
+    background: none;
+    -webkit-text-fill-color: #555;
+    color: #555;
+    font: 700 13px/1 Arial, sans-serif;
+    letter-spacing: 0;
+    text-shadow: none;
+}
+body.theme-ragnar-classic .logo-icon { width: 19px; height: 19px; }
+body.theme-ragnar-classic .window-btn {
+    border: 1px solid #8aa400;
+    background: radial-gradient(circle at 35% 25%, #d5e874, #85a900 68%, #527400);
+    box-shadow: inset 0 1px 1px #eefabc, 0 1px 2px #9d9d9d;
+    color: #203600;
+    width: 29px;
+    height: 29px;
+    border-radius: 50%;
+}
+body.theme-ragnar-classic .window-btn:not(.window-btn-close) {
+    background: #f2f2f2;
+    border-color: #ddd;
+    box-shadow: none;
+}
+body.theme-ragnar-classic .main-content {
+    padding: 0 14px 10px;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    animation: none;
+    min-height: 0;
+}
+body.theme-ragnar-classic .content-panel {
+    padding: 0;
+    background: white;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    animation: none;
+    display: flex;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+}
+body.theme-ragnar-classic .top-grid {
+    display: grid;
+    grid-template-columns: 148px minmax(0, 1fr) 142px;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+}
+.classic-ad-rail { display: none; }
+body.theme-ragnar-classic .classic-ad-rail {
+    display: grid;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+}
+.classic-ad-card {
+    border: 1px solid rgba(255, 255, 255, .5);
+    border-radius: 2px;
+    overflow: hidden;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    font-weight: 900;
+    letter-spacing: .7px;
+}
+.classic-ad-card span { z-index: 1; }
+.classic-ad-card small {
+    z-index: 1;
+    display: block;
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .2px;
+}
+.classic-ad-card::after {
+    content: '';
+    position: absolute;
+    inset: auto -30% -35% -30%;
+    height: 78%;
+    border-radius: 50%;
+    transform: rotate(-8deg);
+    background: rgba(255, 255, 255, .18);
+}
+.classic-ad-card--care {
+    color: #fff;
+    background: radial-gradient(ellipse at 65% 0%, #15a4b2, transparent 55%),
+        linear-gradient(155deg, #29245e 0%, #136e8b 62%, #69c3e0);
+    text-shadow: 0 2px 4px #132a52;
+    font-size: 17px;
+}
+.classic-ad-card--life {
+    color: #246e93;
+    background: linear-gradient(135deg, #eafaff, #97d8ec 48%, #f6fdfd);
+    font-size: 19px;
+}
+.classic-ad-card--clicker {
+    color: #ffe269;
+    background: radial-gradient(circle at 20% 30%, #80d8ff, transparent 54%),
+        linear-gradient(130deg, #1283bc, #2242a5 80%);
+    text-shadow: -1px 2px 0 #213765, 1px 0 4px #163464;
+    font-size: 20px;
+}
+body.theme-ragnar-classic .news-section-main {
+    background: #1d1e1f;
+    border: 1px solid #9c9c9c;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    height: 100%;
+    min-height: 0;
+    animation: none;
+    color: #fff;
+}
+body.theme-ragnar-classic .news-filter-buttons {
+    margin: 0;
+    gap: 0;
+    padding: 7px 8px 0;
+    flex-shrink: 0;
+}
+body.theme-ragnar-classic .filter-btn {
+    background: #252627;
+    color: #adadad;
+    border: 1px solid #373839;
+    border-radius: 0;
+    padding: 7px 4px;
+    box-shadow: none;
+}
+body.theme-ragnar-classic .filter-btn.active {
+    background: #292b2c;
+    color: #00f6dc;
+    border-color: #00ad9d;
+    box-shadow: inset 0 -2px 0 #00bfac;
+}
+body.theme-ragnar-classic .filter-btn:hover { background: #353839; }
+body.theme-ragnar-classic .news-cards-wrapper { min-height: 0; }
+body.theme-ragnar-classic .news-cards-container {
+    color: #fff;
+    scrollbar-color: #c1c1c1 #e6e6e6;
+}
+body.theme-ragnar-classic .news-item {
+    background: #202222;
+    color: white;
+    border: none;
+    border-bottom: 1px solid #363737;
+    border-radius: 0;
+    box-shadow: none;
+}
+body.theme-ragnar-classic .news-item:hover {
+    background: #243333;
+    border-color: #00b9a7;
+}
+body.theme-ragnar-classic .news-title {
+    color: #00e5d0;
+    font-size: 17px;
+    font-family: Arial, sans-serif;
+    font-weight: 700;
+}
+body.theme-ragnar-classic .news-date { color: #aeb5b5; }
+body.theme-ragnar-classic .news-badge {
+    color: #00ddc4;
+    background: rgba(0, 213, 192, .11);
+}
+body.theme-ragnar-classic .loading { color: #bfc6c4; }
+body.theme-ragnar-classic .image-grid-section {
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+body.theme-ragnar-classic .image-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: repeat(2, minmax(0,1fr));
+    gap: 12px;
+    height: 100%;
+}
+body.theme-ragnar-classic .grid-image-item {
+    border: 1px solid #a9a9a9;
+    border-radius: 0;
+    box-shadow: none;
+    background: #242526;
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+}
+body.theme-ragnar-classic .grid-image-item:nth-child(n + 3) { display: none; }
+body.theme-ragnar-classic .grid-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+body.theme-ragnar-classic .bottom-section {
+    display: block;
+    flex: 0 0 114px;
+    height: 114px;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+}
+body.theme-ragnar-classic .server-status-image-container { display: none; }
+body.theme-ragnar-classic .progress-section {
+    display: grid;
+    position: relative;
+    grid-template-columns: 148px minmax(0,1fr) 142px;
+    grid-template-rows: 50px 22px 40px;
+    gap: 0 12px;
+    border: 0;
+    border-radius: 0;
+    background: white;
+    height: 100%;
+    padding: 0;
+    box-shadow: none;
+}
+body.theme-ragnar-classic .progress-label {
+    grid-column: 2;
+    grid-row: 2;
+    color: #303030;
+    text-align: center;
+    font: 11px Arial, sans-serif;
+    margin: 0;
+}
+body.theme-ragnar-classic .progress-bar-container {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    height: 15px;
+    border: 1px solid #898989;
+    border-radius: 0;
+    background: #f3f3f3;
+    overflow: visible;
+    margin: 0 0 23px;
+    box-shadow: inset 0 0 1px #bbb;
+}
+body.theme-ragnar-classic .progress-bar-container::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 16px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: repeating-linear-gradient(115deg,
+        #b3df9b 0, #b3df9b 9px, #eaf6aa 10px, #eaf6aa 18px,
+        #98dfbd 19px, #98dfbd 28px);
+    border: 1px solid #8e9c71;
+    pointer-events: none;
+}
+body.theme-ragnar-classic .progress-bar-container::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 13px;
+    background: repeating-linear-gradient(115deg,
+        rgba(255,255,255,.35) 0,rgba(255,255,255,.35) 13px,
+        rgba(255,255,255,.0) 14px, rgba(255,255,255,.0) 24px);
+    pointer-events: none;
+}
+body.theme-ragnar-classic .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #7ee3de, #e6b3f9 45%, #f5c98e);
+    border-radius: 0;
+    box-shadow: none;
+}
+body.theme-ragnar-classic .button-row { display: contents; }
+body.theme-ragnar-classic .btn-play-now {
+    grid-column: 3;
+    grid-row: 1 / span 3;
+    align-self: center;
+    justify-self: center;
+    width: 82px;
+    height: 82px;
+    min-width: 82px;
+    padding: 4px;
+    border-radius: 50%;
+    border: 2px solid #969696;
+    color: #fff;
+    background: radial-gradient(circle at 30% 18%, #f5f5f5, #c4c4c4 34%, #888 75%, #dadada);
+    text-shadow: 0 1px 3px #777;
+    box-shadow: inset 0 2px 4px #fff, inset 0 -3px 6px #777, 0 2px 3px #aaa;
+    font: 700 15px Arial, sans-serif;
+    letter-spacing: .2px;
+}
+body.theme-ragnar-classic .btn-play-now:hover {
+    background: radial-gradient(circle at 30% 15%, #fff, #cacaca 45%, #949494 75%, #e5e5e5);
+}
+body.theme-ragnar-classic .btn-play-now:disabled { opacity: .7; }
+body.theme-ragnar-classic .btn-register {
+    position: absolute;
+    left: 5px;
+    bottom: 43px;
+    min-width: 105px;
+    height: 28px;
+    font: 600 11px Arial, sans-serif;
+}
+body.theme-ragnar-classic .btn-action-small {
+    width: 30px;
+    height: 30px;
+    position: absolute;
+    right: 114px;
+    top: 7px;
+    background: linear-gradient(#fada63, #c17b0a);
+    border: 1px solid #95650b;
+    color: #533300;
+    border-radius: 50%;
+    padding: 0;
+    box-shadow: inset 0 1px 2px #fff2a0;
+}
+body.theme-ragnar-classic .btn-action-small:nth-of-type(4) { top: 41px; }
+body.theme-ragnar-classic .btn-action-small:nth-of-type(5) { top: 75px; }
+body.theme-ragnar-classic .social-buttons-inline {
+    display: flex;
+    position: absolute;
+    left: 4px;
+    bottom: 2px;
+    gap: 4px;
+}
+body.theme-ragnar-classic .social-btn-inline {
+    color: #5963af;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+body.theme-ragnar-classic .volume-controls-inline {
+    position: absolute;
+    bottom: 0;
+    left: 102px;
+    display: flex;
+}
+body.theme-ragnar-classic .volume-slider-inline { accent-color: #6297cb; }
+body.theme-ragnar-classic.theme-preview-only::after {
+    content: 'RAGNAR CLASSIC • OFFLINE UI PREVIEW • PATCH DISABLED';
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    color: #4f6270;
+    background: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 6px #ddd;
+    font: 600 10px Arial, sans-serif;
+    padding: 5px 12px;
+    pointer-events: none;
+}
+body.theme-ragnar-classic.theme-preview-only .btn-play-now { cursor: not-allowed; }
+@media (max-width: 760px) {
+    body.theme-ragnar-classic .top-grid { grid-template-columns: 108px minmax(0,1fr) 98px; gap: 5px; }
+    body.theme-ragnar-classic .progress-section { grid-template-columns: 108px minmax(0,1fr) 98px; gap: 0 5px; }
+    body.theme-ragnar-classic .btn-action-small { right: 90px; }
+    body.theme-ragnar-classic .classic-ad-card { font-size: 12px; }
+}

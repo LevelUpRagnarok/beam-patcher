@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/AGENTS.md
 Amac: beam-patcher projesinde merkezi DevStandards v3.0.0 uygulama ilkeleri
 Modul - Documentation Markdown
-Version: 3.0.0
+Version: 3.1.0-candidate
 Aciklama: Pinli standart ile mevcut oyun/runtime katmanlarini koruyan sozlesme
 Bagimli Oldugu Katman: Documentation
 -->
@@ -24,6 +24,32 @@ Bagimli Oldugu Katman: Documentation
 - Gercek build, unit, contract, engine/Docker, client smoke ve gameplay kontrolunu ayri degerlendir. Islemeyen testi PASS sayma; test artifactini release sayma.
 - Trusted self-hosted runner'a untrusted fork PR kodu gonderme. Baska repo kapsaminda izinsiz islem yapma.
 - Merkezi repo private olabilir: dis katilimci erisemese bile bu ozet baglayicidir, okunmamis merkezi dokumana atifla gercek disi uyum iddia etme.
+
+## TURKUAZ-ONLY-001 — Tek Windows kurulum altyapisi
+
+- 2026-11-05 kullanici karari: BeamPatcher icin TurkuazInstaller tek
+  primary kurulum aracidir; ikinci installer, NSIS yedegi/derlemesi
+  ve bagimsiz Inno dagitimi yoktur.
+- Sadece guvenilir, dogrulanmis TurkuazInstaller primary EXE
+  yayinlanabilir. QA, test-signed veya unsigned setup yayinlanamaz.
+- Gercek detached CMS manifest + harici certificate pin, ayni kaynak
+  commit'e ait paket, Windows Authenticode yayinci dogrulamasi ve native
+  install/update/repair/rollback/uninstall kabul kaniti olmadan hicbir
+  setup "hazir" sayilamaz. Her eksikte fail-closed.
+- Yalniz pinlenmis Rust TurkuazInstaller kullanilir: .tzpkg, .tzsetup,
+  TurkuazSetup.exe. Eski .NET ve Velopack installer aktif CI'dan kaldirildi.
+- Rust TurkuazInstaller prototipi QA'da ephemeral imza ile test edilir.
+  Test sertifikasi gercek yayinci imzasi veya release izni degildir.
+- CI enforce: tools/check_installer_workflows.py,
+  tools/verify_installer_primary.py,
+  .github/workflows/turkuaz-primary-policy.yml.
+  Korumali yayin: Rust kaynak, bundle, manifest, CMS, Authenticode ve native Windows E2E.
+- Rust tek-primary adayinin otomatik QA'si
+  .github/workflows/rust-installer-beam-compat.yml icindedir.
+  Korumali product gate ayri ve workflow_dispatch ile onaylidir.
+- Merkezi DevStandards'in sabit commit'i degistirilmez; repo-ozel
+  kurulum tercihi bu dalda acikca ayridir. Onaysiz merge veya
+  production release yapma.
 
 ## Proje odak noktasi
 

@@ -11,7 +11,7 @@ This directory contains community-contributed themes for Beam Patcher.
 
 ## Available Themes
 
-### Default
+### Turkuaz Standart (`default`)
 Basic theme with minimal customization. Great starting point for creating your own theme.
 
 ### Dark Mode (Coming Soon)
@@ -20,6 +20,34 @@ A sleek dark theme for night patching sessions.
 ### Classic RO (Coming Soon)
 Nostalgic theme inspired by classic Ragnarok Online aesthetics.
 
+## Turkuaz Ragnarok Online themes (opt-in)
+
+The client project has **two separate visual choices**, neither activated
+for players by default:
+
+- **Turkuaz Nostalji:** `ui.theme: ragnar-legacy` — rose/cream recoloring
+  inspired by the older THOR web patcher styles. Guide:
+  [`ragnar-legacy/README.md`](ragnar-legacy/README.md).
+- **Turkuaz Klasik:** `ui.theme: ragnar-classic` — the last-used launcher
+  screenshot layout, with three left promo panels, black main news pane,
+  two right mini previews, dual rainbow progress styling and round Start.
+  Guide: [`ragnar-classic/README.md`](ragnar-classic/README.md).
+
+- **Turkuaz Modern:** `ui.theme: levelup-modern` — blue/gold fantasy-inspired
+  launcher styling, plus an in-app appearance selector for all four themes.
+  Guide: [`levelup-modern/README.md`](levelup-modern/README.md).
+
+The launcher gear button now opens **Gorunum ve Ayarlar**. You can switch
+themes immediately and save the choice on this device without writing to
+`config.yml`; the same dialog retains access to the native Game Setup action.
+
+Only the selected theme CSS is enabled at runtime. Both leave the original
+Beam default style intact and preserve patcher command handlers. No old
+THOR binary is used to patch a modern 2022 GRF in these themes.
+
+**Browser QA without the game:** open `beam-ui/public/index.html?theme=levelup-modern` (or `?theme=ragnar-classic`)
+from a checked-out branch. That preview disables patching/launching. Do
+not copy the 2015 THOR config or deploy the locked 2022 patch feed.
 ## Creating Your Own Theme
 
 ### Quick Start

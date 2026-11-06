@@ -37,6 +37,13 @@ pub struct Patcher {
 
 impl Patcher {
     pub fn new(config: Config) -> Result<Self> {
+        // Validate policy before creating cache/temp files or fetching a patch.
+        config.validate()?;
+        if config.patcher.qa_only && config.app.game_directory.is_none() {
+            return Err(Error::InvalidConfig(
+                "QA isolation: select a fresh isolated test directory".into()
+            ));
+        }
         // Validate the protected client identity before downloader or temp writes.
         let compatibility_guard = PatchCompatibilityGuard::new(&config)?;
         let downloader = Downloader::new(config.clone())?;
@@ -339,8 +346,8 @@ impl Patcher {
             info!("Opening existing GRF: {:?}", path);
             Ok(Grf::open(path)?)
         } else {
-            info!("GRF not found, creating new: {:?}", path);
-            Ok(Grf::create_new(path)?)
+            info!("GRF not found, staging new GRF (no disk write): {:?}", path);
+            Ok(Grf::staging_new(path))
         }
     }
 }

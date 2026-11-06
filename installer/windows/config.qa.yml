@@ -1,0 +1,64 @@
+# Dosya Yolu: installer/windows/config.qa.yml
+# Amac: Standalone Beam QA kurulumunun varsayilan kapali ve test odakli profili
+# Modul - YAML deployment profile
+# Version: 0.2.0-candidate
+# Aciklama: Varsayilan uzak patch yayini yok; QA GRF ayridir; manuel test bilincli secilir
+# Bagimli Oldugu Katman: beam-core/src/config.rs | installer/windows/BeamPatcher-QA.iss
+app:
+  name: "Turkuaz Ragnarok Online QA"
+  version: "1.0.1"
+  window_title: "Turkuaz Ragnarok Online - QA (TEST MODU)"
+  game_directory: null
+  client_exe: "NO_CLIENT_CONFIGURED.exe"
+  setup_exe: null
+  bgm_autoplay: false
+  bgm_file: null
+  server_name: "TURKUAZ RAGNAROK ONLINE (QA)"
+  video_background_enabled: false
+  video_background_file: null
+  grid_images:
+    - "assets/turkuaz-user-classic-castle.svg"
+    - "assets/turkuaz-user-adventurers.svg"
+    - "assets/turkuaz-user-poring.svg"
+    - "assets/turkuaz-dungeon.svg"
+  limited_items: []
+  social_links: []
+  discord_url: null
+  register_url: null
+
+patcher:
+  mirrors:
+    - name: "Offline QA - not a public patch server"
+      url: "http://127.0.0.1:9/disabled"
+      priority: 1
+  patch_list_url: "http://127.0.0.1:9/disabled/patchlist.txt"
+  target_grf: "levelup-qa.grf"
+  allow_manual_patch: true
+  verify_checksums: true
+  qa_only: true
+  compatibility_guard: null
+
+ui:
+  theme: "levelup-modern"
+  custom_css: null
+  logo: null
+  background: null
+  show_progress: true
+  show_file_list: true
+  news_feed_url: null
+  server_status_url: null
+  status_image_url: null
+  custom_buttons: []
+  layout:
+    width: 900
+    height: 620
+    use_custom_layout: false
+
+sso: null
+updater:
+  enabled: false
+  check_url: "http://127.0.0.1:9/disabled/version.json"
+  update_url: "http://127.0.0.1:9/disabled"
+  auto_update: false
+  github_repo: null
+server: null

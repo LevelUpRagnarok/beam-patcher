@@ -21,7 +21,6 @@ tauri = { version = "1.5", features = [
     "http-all",
     "protocol-asset",
     "shell-open", 
-    "updater",
     "window-close",
     "window-hide",
     "window-minimize",

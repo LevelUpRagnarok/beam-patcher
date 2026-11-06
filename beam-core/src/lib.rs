@@ -2,6 +2,7 @@ pub mod config;
 pub mod downloader;
 pub mod patcher;
 mod patch_guard;
+pub mod qa_guard;
 pub mod updater;
 pub mod sso;
 pub mod error;

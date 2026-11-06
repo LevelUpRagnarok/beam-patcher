@@ -36,7 +36,7 @@ fn reject(reason: impl Into<String>) -> Error {
     Error::PatchFailed(format!("Region/channel patch guard: {}", reason.into()))
 }
 
-fn safe_basename(value: &str) -> bool {
+pub(crate) fn safe_basename(value: &str) -> bool {
     !value.is_empty()
         && value != "."
         && value != ".."

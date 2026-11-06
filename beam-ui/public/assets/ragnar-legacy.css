@@ -1,0 +1,212 @@
+/*
+Dosya Yolu: beam-ui/public/assets/ragnar-legacy.css
+Amac: Ragnar Ragnarok Online old THOR patcher pastel-rose theme for Beam UI
+Modul - CSS Tauri UI opt-in theme
+Version: 0.1.0-candidate
+Aciklama: Visual only; no download/patch/GRF behavior changed. No old THOR files installed.
+Bagimli Oldugu Katman: beam-ui/public/index.html | RagnarokClient/patcher/web/legacy
+*/
+
+/* Historical cues: old web patcher #F1B9C4 scrollbars, #666 text,
+   #FF7D00 interactive accent, parchment white and compact panel framing. */
+body.theme-ragnar-legacy {
+    --bg: #2f2435;
+    --panel: #fff9ee;
+    --glass: rgba(255, 249, 238, 0.95);
+    --border: rgba(146, 88, 109, .36);
+    --border-glow: rgba(241, 185, 196, .42);
+    --blue: #bd6483;
+    --blue2: #8a395d;
+    --blue-glow: rgba(189, 100, 131, .28);
+    --indigo: #bd6483;
+    --indigo-dark: #8a395d;
+    --indigo-glow: rgba(189, 100, 131, .24);
+    --text: #5b4758;
+    --text-bright: #4a2842;
+    --muted: #776a75;
+    --green: #3e927d;
+    --green-glow: rgba(62, 146, 125, .25);
+    --orange: #d17d38;
+    --orange-glow: rgba(209, 125, 56, .24);
+    --purple-glow: rgba(134, 87, 155, .24);
+    color: #4d3a4d;
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 233, 208, .65), transparent 50%),
+        radial-gradient(ellipse at 90% 95%, rgba(239, 159, 185, .54), transparent 56%),
+        linear-gradient(145deg, #f5d8df 0%, #f9eadd 48%, #e6bdca 100%);
+}
+
+body.theme-ragnar-legacy .video-overlay {
+    background: linear-gradient(140deg, rgba(255, 244, 235, .22), rgba(118, 55, 89, .09));
+    backdrop-filter: none;
+}
+
+/* Keep original Beam layout and actions. Only restyle their appearance. */
+body.theme-ragnar-legacy .header {
+    background: linear-gradient(180deg, #fffaf2 0%, #edc5d1 100%);
+    border-bottom: 2px solid rgba(150, 72, 103, .42);
+    box-shadow: 0 3px 12px rgba(105, 58, 72, .15);
+}
+body.theme-ragnar-legacy .header::before {
+    background: linear-gradient(90deg, transparent, rgba(198, 114, 144, .85), transparent);
+}
+body.theme-ragnar-legacy .logo-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    letter-spacing: .7px;
+    font-weight: 700;
+    background: none;
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: #643850;
+    color: #643850;
+    text-shadow: 0 1px 0 #fff9ee;
+}
+body.theme-ragnar-legacy .logo-icon path,
+body.theme-ragnar-legacy .logo-icon circle {
+    stroke: #b56a75;
+}
+body.theme-ragnar-legacy .window-btn {
+    color: #614354;
+    background: rgba(255, 255, 255, .53);
+    border: 1px solid rgba(175, 110, 137, .2);
+}
+body.theme-ragnar-legacy .main-content {
+    padding: 14px;
+}
+body.theme-ragnar-legacy .content-panel {
+    background: rgba(255, 251, 242, .78);
+    border: 1px solid rgba(165, 105, 127, .38);
+    border-radius: 16px;
+    box-shadow: 0 10px 32px rgba(99, 56, 80, .19), inset 0 1px 0 #fffdf9;
+    padding: 14px;
+}
+body.theme-ragnar-legacy .news-section-main {
+    background: rgba(255, 255, 252, .62);
+    border: 1px solid rgba(171, 113, 138, .24);
+    box-shadow: inset 0 0 20px rgba(248, 221, 218, .3);
+}
+body.theme-ragnar-legacy .news-filter-buttons {
+    gap: 8px;
+}
+body.theme-ragnar-legacy .filter-btn {
+    color: #71586d;
+    background: #fff9f3;
+    border: 1px solid #dfbbc7;
+    border-radius: 7px;
+    box-shadow: 0 1px 2px rgba(101, 52, 70, .07);
+}
+body.theme-ragnar-legacy .filter-btn.active {
+    color: #fffdfa;
+    background: linear-gradient(135deg, #bc6687, #89496b);
+    border-color: #a45876;
+    box-shadow: 0 2px 10px rgba(161, 82, 119, .25);
+}
+body.theme-ragnar-legacy .filter-btn:hover {
+    border-color: #bd6483;
+    background: #f9dfe6;
+    box-shadow: 0 2px 10px rgba(161, 82, 119, .16);
+}
+body.theme-ragnar-legacy .filter-btn.active:hover {
+    color: white;
+    background: #9f4c73;
+}
+body.theme-ragnar-legacy .news-item {
+    background: rgba(255, 250, 244, .93);
+    border: 1px solid rgba(212, 159, 175, .52);
+    color: #574257;
+    box-shadow: 0 2px 6px rgba(107, 59, 78, .07);
+}
+body.theme-ragnar-legacy .news-item:hover {
+    border-color: #c67996;
+    background: #fff5e9;
+}
+body.theme-ragnar-legacy .news-title {
+    color: #5e435a;
+    font-family: Georgia, 'Times New Roman', serif;
+}
+body.theme-ragnar-legacy .news-badge {
+    background: #f4dce4;
+    color: #904b6d;
+}
+body.theme-ragnar-legacy .grid-image-item,
+body.theme-ragnar-legacy .server-status-image-container {
+    background: #fcf2ea;
+    border: 2px solid rgba(190, 119, 140, .5);
+    box-shadow: 0 4px 12px rgba(101, 52, 70, .15);
+}
+body.theme-ragnar-legacy .grid-image-item:hover {
+    border-color: #d48caa;
+}
+body.theme-ragnar-legacy .status-placeholder {
+    color: #866779;
+}
+body.theme-ragnar-legacy .progress-section {
+    background: rgba(255, 249, 239, .76);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(167, 99, 121, .3);
+}
+body.theme-ragnar-legacy .progress-label {
+    color: #664e62;
+    font-weight: 600;
+}
+body.theme-ragnar-legacy .progress-bar-container {
+    background: #f1d9df;
+    border: 1px solid rgba(148, 82, 106, .3);
+}
+body.theme-ragnar-legacy .progress-bar {
+    background: linear-gradient(90deg, #be7396, #e4a884 65%, #e6bc82);
+    box-shadow: 0 0 12px rgba(190, 115, 150, .26);
+}
+body.theme-ragnar-legacy .btn-play-now {
+    background: linear-gradient(135deg, #bf758f, #8e476c);
+    color: #fffaf5;
+    border: 1px solid rgba(121, 60, 84, .55);
+    box-shadow: 0 4px 14px rgba(149, 67, 104, .24);
+}
+body.theme-ragnar-legacy .btn-play-now:hover {
+    background: linear-gradient(135deg, #d0869d, #a85879);
+}
+body.theme-ragnar-legacy .btn-register,
+body.theme-ragnar-legacy .btn-action-small,
+body.theme-ragnar-legacy .social-btn-inline {
+    color: #604458;
+    background: #fff3e9;
+    border: 1px solid #d6adb9;
+    box-shadow: 0 1px 5px rgba(116, 63, 87, .1);
+}
+body.theme-ragnar-legacy .btn-register:hover,
+body.theme-ragnar-legacy .btn-action-small:hover,
+body.theme-ragnar-legacy .social-btn-inline:hover {
+    color: #733957;
+    background: #ffe2eb;
+    border-color: #cc849e;
+}
+body.theme-ragnar-legacy .volume-slider-inline {
+    accent-color: #bd6483;
+}
+
+/* Browser-only preview overlay. Never shown inside Tauri. */
+body.theme-ragnar-legacy.theme-preview-only::after {
+    content: 'RAGNAR THEME PREVIEW • OFFLINE • NO PATCHING';
+    position: fixed;
+    right: 18px;
+    top: 50px;
+    z-index: 100;
+    background: rgba(109, 53, 78, .93);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font: 600 11px/1.2 Arial, sans-serif;
+    letter-spacing: .4px;
+    pointer-events: none;
+}
+body.theme-ragnar-legacy.theme-preview-only .btn-play-now,
+body.theme-ragnar-legacy.theme-preview-only .btn-action-small {
+    opacity: .6;
+    cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+    body.theme-ragnar-legacy,
+    body.theme-ragnar-legacy .content-panel,
+    body.theme-ragnar-legacy .news-section-main { animation: none; }
+}

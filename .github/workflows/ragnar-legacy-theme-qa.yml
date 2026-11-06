@@ -1,0 +1,122 @@
+# Dosya Yolu: .github/workflows/ragnar-legacy-theme-qa.yml
+# Amac: Ragnar classic Beam theme CSS/config/JS contract QA
+# Modul - GitHub Actions YAML
+# Version: 0.3.1-candidate
+# Aciklama: Offline source check only, no game files/patcher binary/release.
+# Bagimli Oldugu Katman: tools/tests/test_ragnar_legacy_theme.py | beam-ui/public/index.html
+name: Turkuaz Ragnarok Online Launcher Theme QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "beam-ui/public/index.html"
+      - "beam-ui/public/assets/ragnar-legacy.css"
+      - "beam-ui/public/assets/ragnar-classic.css"
+      - "beam-ui/public/assets/levelup-modern.css"
+      - "beam-ui/public/assets/turkuaz-premium.css"
+      - "beam-ui/public/assets/turkuaz-reference-restore.css"
+      - "beam-ui/public/assets/turkuaz-user-*.svg"
+      - "beam-ui/public/assets/turkuaz-*.svg"
+      - "themes/ragnar-classic/**"
+      - "themes/levelup-modern/**"
+      - "themes/README.md"
+      - "tools/tests/test_ragnar_classic_theme.py"
+      - "tools/tests/test_levelup_modern_theme.py"
+      - "tools/tests/test_turkuaz_branding.py"
+      - "tools/tests/test_turkuaz_premium_theme.py"
+      - "tools/tests/test_turkuaz_reference_restore.py"
+      - "tools/QA-THEME-BROWSER.py"
+      - "themes/ragnar-legacy/**"
+      - "tools/tests/test_ragnar_legacy_theme.py"
+      - ".github/workflows/ragnar-legacy-theme-qa.yml"
+  pull_request:
+    paths:
+      - "beam-ui/public/index.html"
+      - "beam-ui/public/assets/ragnar-legacy.css"
+      - "beam-ui/public/assets/ragnar-classic.css"
+      - "beam-ui/public/assets/levelup-modern.css"
+      - "beam-ui/public/assets/turkuaz-premium.css"
+      - "beam-ui/public/assets/turkuaz-reference-restore.css"
+      - "beam-ui/public/assets/turkuaz-user-*.svg"
+      - "beam-ui/public/assets/turkuaz-*.svg"
+      - "themes/ragnar-classic/**"
+      - "themes/levelup-modern/**"
+      - "themes/README.md"
+      - "tools/tests/test_ragnar_classic_theme.py"
+      - "tools/tests/test_levelup_modern_theme.py"
+      - "tools/tests/test_turkuaz_branding.py"
+      - "tools/tests/test_turkuaz_premium_theme.py"
+      - "tools/tests/test_turkuaz_reference_restore.py"
+      - "tools/QA-THEME-BROWSER.py"
+      - "themes/ragnar-legacy/**"
+      - "tools/tests/test_ragnar_legacy_theme.py"
+      - ".github/workflows/ragnar-legacy-theme-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Assert opt-in theme, preview and 2015 patch channel isolation
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_ragnar_legacy_theme.py' -v
+      - name: Seven screenshot-based classic launcher UI layout and safety contracts
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_ragnar_classic_theme.py' -v
+      - name: Turkuaz Modern preference, settings, and offline visual QA
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_levelup_modern_theme.py' -v
+      - name: Turkuaz visible branding and safe QA compatibility contract
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_branding.py' -v
+      - name: Premium artwork SVG validity and visual safety contracts
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_premium_theme.py' -v
+      - name: User reference images and native buttons restore contract
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_reference_restore.py' -v
+      - name: Extract inline Beam UI JavaScript for syntax validation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("beam-ui/public/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>\s*(.*?)</script>", html, flags=re.S)
+          assert len(scripts) == 1, f"Expected one inline JS script, found {len(scripts)}"
+          Path("/tmp/ragnar-beam-ui-inline.js").write_text(scripts[0], encoding="utf-8")
+          PY
+          node --check /tmp/ragnar-beam-ui-inline.js
+
+  # Browser rendering evidence; this is not the native Tauri/WebView2 smoke test.
+  chromium-theme-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout branch without credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python for deterministic browser QA
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Playwright (use hosted Chrome)
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir playwright==1.56.0
+          google-chrome --version
+      - name: Render all four themes and verify restart persistence (offline mocked Tauri)
+        run: |
+          python tools/QA-THEME-BROWSER.py --output-dir build/theme-visual-qa --source-sha "${{ github.sha }}"
+      - name: Upload short-lived screenshot proof (not a release)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beam-themes-chromium-qa-${{ github.sha }}
+          path: build/theme-visual-qa
+          retention-days: 7
+          if-no-files-found: error

@@ -1,0 +1,344 @@
+/*
+Dosya Yolu: beam-ui/public/assets/levelup-modern.css
+Amac: LevelUp Games yeni nesil launcher gorunumu; guvenli ve secilebilir Beam UI temasi
+Modul - CSS opt-in visual theme
+Version: 0.1.0-candidate
+Aciklama: Koyu lacivert, altin-mavi modern yerlesim; oyun ve patch event handler'lari degismez
+Bagimli Oldugu Katman: beam-ui/public/index.html | themes/levelup-modern/README.md
+*/
+
+/* This is a functional CSS interpretation of the approved concept, not a
+   screenshot stretched over buttons. Licensed character art remains optional. */
+.modern-nav, .modern-hero { display: none; }
+
+body.theme-levelup-modern {
+    --bg: #07172c;
+    --panel: #0b1c36;
+    --glass: rgba(9, 26, 51, .96);
+    --border: rgba(139, 180, 228, .34);
+    --border-glow: rgba(238, 183, 105, .35);
+    --blue: #2788ed;
+    --blue2: #1765c8;
+    --blue-glow: rgba(44, 137, 245, .4);
+    --text: #e6f1ff;
+    --text-bright: #fff;
+    --muted: #bbcee8;
+    --green: #20da86;
+    --orange: #e9b56c;
+    background: radial-gradient(ellipse at 46% 8%, #254e8e 0, transparent 48%),
+        linear-gradient(150deg, #09192f, #061020 80%);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    animation: none;
+}
+body.theme-levelup-modern .video-overlay {
+    background: linear-gradient(90deg, rgba(3, 12, 30, .65), rgba(7, 19, 44, .45));
+}
+body.theme-levelup-modern .header {
+    flex-shrink: 0;
+    height: 54px;
+    border-bottom: 1px solid rgba(210, 171, 107, .48);
+    background: linear-gradient(180deg, #061228, #0b1a34);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
+    padding: 0 16px;
+}
+body.theme-levelup-modern .header::before {
+    background: linear-gradient(90deg, transparent, #e8bd76, transparent);
+}
+body.theme-levelup-modern .logo-icon { width: 31px; height: 31px; }
+body.theme-levelup-modern .logo-text {
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    background: linear-gradient(#fff6db, #dca75c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+body.theme-levelup-modern .modern-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+}
+body.theme-levelup-modern .modern-nav button {
+    padding: 9px 12px;
+    color: #d5e2f5;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+body.theme-levelup-modern .modern-nav button:hover,
+body.theme-levelup-modern .modern-nav button:focus-visible {
+    color: #fff;
+    border-color: rgba(138, 173, 245, .5);
+    background: rgba(35, 87, 174, .45);
+}
+body.theme-levelup-modern .window-btn {
+    border: 1px solid rgba(132, 167, 230, .35);
+    background: #132b50;
+    border-radius: 8px;
+}
+body.theme-levelup-modern .main-content {
+    padding: 10px 12px 12px;
+    min-height: 0;
+}
+body.theme-levelup-modern .content-panel {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    animation: none;
+    min-height: 0;
+}
+body.theme-levelup-modern .top-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.68fr) minmax(245px, .9fr);
+    grid-template-rows: minmax(0, 1.55fr) minmax(0, .95fr);
+    gap: 10px;
+    height: 360px;
+    min-height: 0;
+    margin: 0;
+}
+body.theme-levelup-modern .classic-ad-rail { display: none; }
+body.theme-levelup-modern .modern-hero {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    overflow: hidden;
+    align-items: center;
+    border-radius: 13px;
+    border: 1px solid rgba(232, 183, 115, .55);
+    box-shadow: inset 0 0 48px rgba(13, 36, 89, .6), 0 12px 32px rgba(0, 0, 0, .3);
+    background:
+        radial-gradient(circle at 80% 26%, rgba(250, 207, 132, .83), transparent 13%),
+        radial-gradient(ellipse at 74% 75%, rgba(67, 146, 224, .78), transparent 52%),
+        linear-gradient(145deg, #152954 7%, #3874c0 53%, #152a54 100%);
+}
+/* Layered castle silhouette is CSS artwork, not a fake client screenshot. */
+body.theme-levelup-modern .modern-hero::before {
+    content: '';
+    position: absolute;
+    width: 75%;
+    height: 85%;
+    right: -5%;
+    bottom: 0;
+    opacity: .57;
+    background:
+        linear-gradient(0deg, #0a1937 0 16%, transparent 16%),
+        linear-gradient(90deg, transparent 10%, #12244a 10% 18%, transparent 18% 29%, #13284c 29% 40%, transparent 40% 53%, #10284b 53% 67%, transparent 67% 81%, #142744 81% 92%, transparent 92%),
+        repeating-linear-gradient(90deg, transparent 0 18px, rgba(252, 220, 159, .15) 19px 22px, transparent 23px 35px);
+    clip-path: polygon(0 72%, 8% 65%, 12% 35%, 15% 65%, 20% 63%, 24% 23%, 30% 61%, 39% 61%, 45% 13%, 53% 61%, 62% 61%, 69% 25%, 75% 62%, 83% 62%, 90% 38%, 95% 70%, 100% 72%, 100% 100%, 0 100%);
+}
+body.theme-levelup-modern .modern-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(5, 14, 41, .82), transparent 90%);
+    pointer-events: none;
+}
+body.theme-levelup-modern .modern-hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 18px 26px;
+    text-shadow: 0 2px 12px rgba(2, 9, 30, .9);
+}
+body.theme-levelup-modern .modern-hero-eyebrow {
+    color: #f6d59d;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+body.theme-levelup-modern .modern-hero h1 {
+    margin: 11px 0 10px;
+    font-size: clamp(27px, 4.5vw, 44px);
+    line-height: 1.04;
+    letter-spacing: 1px;
+    color: #fff8e9;
+    font-family: Georgia, 'Times New Roman', serif;
+}
+body.theme-levelup-modern .modern-hero p {
+    color: #e4efff;
+    font-size: 12px;
+    font-weight: 600;
+}
+body.theme-levelup-modern .news-section-main {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-height: 0;
+    height: 100%;
+    padding: 12px;
+    border: 1px solid rgba(107, 153, 209, .32);
+    border-radius: 13px;
+    background: rgba(6, 19, 41, .95);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .32);
+    animation: none;
+}
+body.theme-levelup-modern .news-section-main::before {
+    content: 'HABERLER';
+    display: block;
+    color: #f1d099;
+    font-weight: 800;
+    font-size: 12px;
+    padding: 2px 0 9px;
+    letter-spacing: .6px;
+}
+body.theme-levelup-modern .news-filter-buttons {
+    gap: 3px;
+    margin-bottom: 8px;
+}
+body.theme-levelup-modern .filter-btn {
+    font-size: 10px;
+    padding: 7px 3px;
+    border-radius: 7px;
+    background: rgba(21, 53, 100, .5);
+}
+body.theme-levelup-modern .filter-btn.active {
+    background: linear-gradient(135deg, #285cbc, #194895);
+    border-color: #508dd9;
+    box-shadow: none;
+}
+body.theme-levelup-modern .news-cards-container {
+    gap: 7px;
+    padding-right: 2px;
+}
+body.theme-levelup-modern .news-item {
+    padding: 10px;
+    background: rgba(24, 51, 90, .64);
+    border-color: rgba(113, 158, 215, .15);
+    border-radius: 8px;
+    animation: none;
+}
+body.theme-levelup-modern .news-title {
+    font-size: 12px;
+    white-space: normal;
+    line-height: 1.35;
+}
+body.theme-levelup-modern .news-badge {
+    padding: 5px 6px;
+    font-size: 9px;
+    background: #2053a0;
+}
+body.theme-levelup-modern .image-grid-section {
+    grid-column: 1;
+    grid-row: 2;
+    height: 100%;
+    min-height: 0;
+    animation: none;
+}
+body.theme-levelup-modern .image-grid {
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    gap: 10px;
+}
+body.theme-levelup-modern .grid-image-item {
+    min-height: 0;
+    height: 100%;
+    aspect-ratio: auto;
+    background: linear-gradient(140deg, #315d9a, #142b54 70%);
+    border-color: rgba(204, 163, 111, .55);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+}
+body.theme-levelup-modern .grid-image-item:nth-child(2) {
+    background: linear-gradient(140deg, #7b4d42, #242047 70%);
+}
+body.theme-levelup-modern .grid-image-item:nth-child(3) {
+    background: linear-gradient(140deg, #b06099, #232b61 70%);
+}
+body.theme-levelup-modern .grid-image-item:nth-child(n+4) { display: none; }
+body.theme-levelup-modern .grid-image-item img { opacity: .27; }
+body.theme-levelup-modern .grid-image-item::after {
+    position: absolute;
+    left: 12px;
+    bottom: 10px;
+    color: white;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: .4px;
+    text-shadow: 0 2px 9px #010e24;
+    pointer-events: none;
+}
+body.theme-levelup-modern .grid-image-item:nth-child(1)::after { content: 'BAŞLANGIÇ REHBERİ'; }
+body.theme-levelup-modern .grid-image-item:nth-child(2)::after { content: 'SINIFLAR'; }
+body.theme-levelup-modern .grid-image-item:nth-child(3)::after { content: 'ETKİNLİKLER'; }
+body.theme-levelup-modern .bottom-section {
+    display: grid;
+    grid-template-columns: 155px minmax(0, 1fr);
+    gap: 10px;
+    padding-top: 10px;
+    margin-top: auto;
+    min-height: 0;
+}
+body.theme-levelup-modern .server-status-image-container {
+    background: rgba(7, 20, 43, .94);
+    border: 1px solid rgba(107, 153, 209, .3);
+    border-radius: 12px;
+    min-height: 88px;
+    animation: none;
+}
+body.theme-levelup-modern .progress-section {
+    min-width: 0;
+    background: rgba(7, 20, 43, .9);
+    border: 1px solid rgba(107, 153, 209, .3);
+    border-radius: 12px;
+    padding: 11px 14px;
+    animation: none;
+}
+body.theme-levelup-modern .progress-label {
+    color: #d8e6fb;
+    margin-bottom: 9px;
+    font-size: 11px;
+}
+body.theme-levelup-modern .progress-bar-container {
+    background: #09162d;
+    height: 9px;
+    border: 1px solid rgba(125, 169, 213, .4);
+}
+body.theme-levelup-modern .progress-bar {
+    background: linear-gradient(90deg, #30b9f9, #3b79fa, #efb866);
+    box-shadow: 0 0 14px rgba(57, 143, 241, .5);
+}
+body.theme-levelup-modern .button-row {
+    justify-content: flex-end;
+    gap: 7px;
+    animation: none;
+}
+body.theme-levelup-modern .btn-play-now {
+    order: 10;
+    border: 1px solid #e2ad62;
+    border-radius: 11px;
+    background: linear-gradient(145deg, #2b9afa, #1045a3 70%);
+    box-shadow: 0 3px 16px rgba(24, 120, 247, .55);
+    color: #fff;
+    text-shadow: 0 1px 2px #133566;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    letter-spacing: 1px;
+}
+body.theme-levelup-modern .btn-action-small {
+    background: #172e55;
+    border-color: rgba(121, 174, 223, .4);
+    border-radius: 9px;
+}
+body.theme-levelup-modern .btn-register { padding: 0 12px; border-radius: 9px; }
+body.theme-levelup-modern .social-btn-inline { width: 30px; height: 34px; }
+body.theme-levelup-modern .volume-controls-inline { display: none; }
+
+@media (max-width: 760px) {
+    body.theme-levelup-modern .modern-nav { gap: 1px; padding: 0 2px; }
+    body.theme-levelup-modern .modern-nav button { padding: 6px; font-size: 10px; }
+    body.theme-levelup-modern .logo-text { font-size: 12px; }
+    body.theme-levelup-modern .top-grid {
+        grid-template-columns: minmax(0, 1.2fr) minmax(200px, .9fr);
+    }
+    body.theme-levelup-modern .modern-hero h1 { font-size: 29px; }
+    body.theme-levelup-modern .button-row { gap: 4px; }
+}

@@ -1,0 +1,84 @@
+# Dosya Yolu: .github/workflows/windows-setup-patch-qa.yml
+# Amac: Windows x64 Beam QA patch E2E; kurulum icin yalniz TurkuazInstaller kullanilir
+# Modul - GitHub Actions / Windows-only QA
+# Version: 0.4.0-candidate
+# Aciklama: Kurulum exe uretmez; paket yayinlama yalniz korumali Turkuaz gate'te
+# Bagimli Oldugu Katman: installer/windows/* | tools/QA-PATCH-E2E.py
+
+name: Beam Windows Patch Core QA
+
+on:
+  pull_request:
+    paths:
+      - "installer/windows/**"
+      - "beam-ui/**"
+      - "beam-patcher/**"
+      - "beam-core/**"
+      - "beam-formats/**"
+      - "tools/QA-PATCH-E2E.py"
+      - "tools/check_installer_workflows.py"
+      - "tools/verify_installer_pair.py"
+      - "tools/tests/prepare_rust_beam_fixture.py"
+      - "tools/build_map_beam.py"
+      - ".github/workflows/windows-setup-patch-qa.yml"
+  push:
+    branches:
+      - feat/windows-setup-patch-qa-20261025
+    paths:
+      - "installer/windows/**"
+      - "beam-ui/**"
+      - "beam-patcher/**"
+      - "beam-core/**"
+      - "beam-formats/**"
+      - "tools/QA-PATCH-E2E.py"
+      - ".github/workflows/windows-setup-patch-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Keep only the latest branch/PR build; never waste runners on superseded QA.
+concurrency:
+  group: beam-windows-setup-qa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-qa-installer:
+    name: Windows x64 Rust BEAM E2E without installer
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout safe QA branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install stable Rust with rustfmt
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: beam-windows-setup-qa
+      - name: Test binary format and patcher core
+        run: |
+          cargo test -p beam-formats --lib
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test -p beam-core --lib
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        shell: pwsh
+      - name: Build actual Beam/Tauri Windows executable
+        run: cargo build --release -p beam-patcher
+      - name: Synthetic BEAM download -> GRF 0x200 -> cached rerun -> corrupt SHA refusal
+        run: |
+          python tools/QA-PATCH-E2E.py --exe target/release/beam-patcher.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        shell: pwsh
+      - name: Check installer workflow policy
+        run: python tools/check_installer_workflows.py
+      - name: Distinguish Windows patch QA from Turkuaz-only product acceptance
+        shell: pwsh
+        run: |
+          Write-Host 'TURKUAZ-ONLY-001: Windows patch QA passes only core/format tests.'
+          Write-Host 'Only the separately protected TurkuazInstaller primary may be approved for distribution.'
+          Write-Host 'No installer built, uploaded or released by this QA workflow.'

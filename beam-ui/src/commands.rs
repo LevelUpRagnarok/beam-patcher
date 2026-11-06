@@ -154,6 +154,9 @@ pub async fn launch_game(
     _token: String,
 ) -> Result<(), String> {
     let config = state.config.lock().unwrap().clone();
+    if config.patcher.qa_only {
+        return Err("QA mode cannot launch a game executable".to_string());
+    }
     
     let exe_dir = std::env::current_exe()
         .map_err(|e| format!("Failed to get executable path: {}", e))?
@@ -279,19 +282,7 @@ pub async fn select_game_directory(state: State<'_, AppState>) -> Result<String,
         .ok_or("No directory selected")?;
     
     let directory_path = selected.to_string_lossy().to_string();
-    
-    let mut config = state.config.lock().unwrap();
-    config.app.game_directory = Some(directory_path.clone());
-    
-    let exe_dir = std::env::current_exe()
-        .map_err(|e| format!("Failed to get executable path: {}", e))?
-        .parent()
-        .ok_or("Failed to get executable directory")?
-        .to_path_buf();
-    
-    let config_path = exe_dir.join("config.yml");
-    config.save(&config_path).map_err(|e| e.to_string())?;
-    
+    save_checked_game_directory(&state, directory_path.clone())?;
     Ok(directory_path)
 }
 
@@ -300,19 +291,23 @@ pub async fn set_game_directory(
     state: State<'_, AppState>,
     directory: String,
 ) -> Result<(), String> {
-    let mut config = state.config.lock().unwrap();
-    config.app.game_directory = Some(directory.clone());
-    
+    save_checked_game_directory(&state, directory)
+}
+
+// SAFETY: reject an occupied/linked QA workspace BEFORE modifying saved
+// or in-memory state; a cancelled directory picker leaves prior config intact.
+fn save_checked_game_directory(state: &State<'_, AppState>, directory: String) -> Result<(), String> {
+    let mut active = state.config.lock().map_err(|err| err.to_string())?;
+    let mut candidate = active.clone();
+    candidate.app.game_directory = Some(directory);
+    candidate.validate().map_err(|err| err.to_string())?;
     let exe_dir = std::env::current_exe()
-        .map_err(|e| format!("Failed to get executable path: {}", e))?
+        .map_err(|err| err.to_string())?
         .parent()
-        .ok_or("Failed to get executable directory")?
+        .ok_or("Could not find launcher installation directory")?
         .to_path_buf();
-    
-    let config_path = exe_dir.join("config.yml");
-    
-    config.save(&config_path).map_err(|e| e.to_string())?;
-    
+    candidate.save(exe_dir.join("config.yml")).map_err(|err| err.to_string())?;
+    *active = candidate;
     Ok(())
 }
 
@@ -342,6 +337,9 @@ pub async fn apply_game_settings(
     settings: GameSettings,
 ) -> Result<(), String> {
     let config = state.config.lock().unwrap();
+    if config.patcher.qa_only {
+        return Err("QA mode cannot write game settings".to_string());
+    }
     
     let game_dir = config.app.game_directory.as_ref()
         .ok_or("Game directory not set")?;
@@ -387,6 +385,9 @@ pub fn resolve_resource_path(app: AppHandle, path: String) -> Result<String, Str
 #[tauri::command]
 pub async fn open_setup(state: State<'_, AppState>) -> Result<(), String> {
     let config = state.config.lock().unwrap().clone();
+    if config.patcher.qa_only {
+        return Err("QA mode cannot launch native game setup".to_string());
+    }
     
     let setup_exe_name = config.app.setup_exe
         .ok_or("Setup executable not configured")?;
@@ -442,27 +443,33 @@ pub async fn open_setup(state: State<'_, AppState>) -> Result<(), String> {
     Ok(())
 }
 
+// Dosya Yolu: beam-ui/src/commands.rs
+// Amac: Manual patch installs the selected BEAM/THOR/GPF/RGZ archive via core Patcher
+// Modul - Tauri command adapter
+// Version: 1.1.0-candidate
+// Aciklama: Never silently copy an archive into the game directory as if it was applied
+// Bagimli Oldugu Katman: beam-core/src/patcher.rs | beam-ui/src/lib.rs
 #[tauri::command]
 pub async fn manual_patch(state: State<'_, AppState>) -> Result<(), String> {
     let selected = tauri::api::dialog::blocking::FileDialogBuilder::new()
-        .add_filter("Patch Files", &["gpf", "patch", "grf"])
+        .add_filter("Supported Patch Archives", &["beam", "thor", "rgz", "gpf"])
         .pick_file()
-        .ok_or("No file selected")?;
-    
-    let config = state.config.lock().unwrap().clone();
-    let game_dir = config.app.game_directory
-        .ok_or("Game directory not set")?;
-    
-    let target_dir = PathBuf::from(&game_dir);
-    let file_name = selected.file_name()
-        .ok_or("Invalid file name")?;
-    
-    let destination = target_dir.join(file_name);
-    
-    std::fs::copy(&selected, &destination)
-        .map_err(|e| format!("Failed to copy patch file: {}", e))?;
-    
-    Ok(())
+        .ok_or("No patch archive selected")?;
+
+    let config = state.config.lock().map_err(|e| e.to_string())?.clone();
+    // Require a consciously selected game directory. Never write GRF under the
+    // installer/launcher directory as a fallback from this GUI action.
+    let directory = config.app.game_directory.as_ref()
+        .ok_or("Select an isolated game directory before manual patching")?;
+    if !std::path::Path::new(directory).is_dir() {
+        return Err("Configured game directory does not exist".to_string());
+    }
+    if !config.patcher.allow_manual_patch {
+        return Err("Manual patching is disabled by the active profile".to_string());
+    }
+
+    let patcher = Patcher::new(config).map_err(|e| e.to_string())?;
+    patcher.manual_patch(&selected).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
