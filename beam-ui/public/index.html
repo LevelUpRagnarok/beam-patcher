@@ -1176,6 +1176,8 @@
     <link id="levelup-modern-theme-css" rel="stylesheet" href="assets/levelup-modern.css" disabled>
     <!-- Shared visual finishing layer; theme IDs and native actions are unchanged. -->
     <link rel="stylesheet" href="assets/turkuaz-premium.css">
+    <!-- Reference restoration layer: scoped to Turkuaz Klasik / Modern visual themes. -->
+    <link rel="stylesheet" href="assets/turkuaz-reference-restore.css">
 </head>
 <body>
     <video id="video-background" autoplay loop muted playsinline></video>
@@ -1210,6 +1212,9 @@
                 </button>
             </div>
         </div>
+
+        <!-- The artwork comes from the supplied reference screenshot. Native controls stay real. -->
+        <div class="turkuaz-reference-banner" role="img" aria-label="Ragnarok Online klasik başlatıcı: karakterler, kale ve Poring illüstrasyonu"></div>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -1957,8 +1962,8 @@
         // PACKAGED ASSET CONTRACT: Tauri embeds public/assets in the frontend.
         // Do not try to resolve these URLs as loose files next to an Inno EXE.
         const builtInGridImages = Object.freeze([
-            'assets/turkuaz-castle.svg', 'assets/turkuaz-skycity.svg',
-            'assets/turkuaz-poring.svg', 'assets/turkuaz-dungeon.svg'
+            'assets/turkuaz-user-classic-castle.svg', 'assets/turkuaz-user-adventurers.svg',
+            'assets/turkuaz-user-poring.svg', 'assets/turkuaz-dungeon.svg'
         ]);
 
         async function loadImageGrid(config) {

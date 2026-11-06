@@ -15,6 +15,8 @@ on:
       - "beam-ui/public/assets/ragnar-classic.css"
       - "beam-ui/public/assets/levelup-modern.css"
       - "beam-ui/public/assets/turkuaz-premium.css"
+      - "beam-ui/public/assets/turkuaz-reference-restore.css"
+      - "beam-ui/public/assets/turkuaz-user-*.svg"
       - "beam-ui/public/assets/turkuaz-*.svg"
       - "themes/ragnar-classic/**"
       - "themes/levelup-modern/**"
@@ -23,6 +25,7 @@ on:
       - "tools/tests/test_levelup_modern_theme.py"
       - "tools/tests/test_turkuaz_branding.py"
       - "tools/tests/test_turkuaz_premium_theme.py"
+      - "tools/tests/test_turkuaz_reference_restore.py"
       - "tools/QA-THEME-BROWSER.py"
       - "themes/ragnar-legacy/**"
       - "tools/tests/test_ragnar_legacy_theme.py"
@@ -34,6 +37,8 @@ on:
       - "beam-ui/public/assets/ragnar-classic.css"
       - "beam-ui/public/assets/levelup-modern.css"
       - "beam-ui/public/assets/turkuaz-premium.css"
+      - "beam-ui/public/assets/turkuaz-reference-restore.css"
+      - "beam-ui/public/assets/turkuaz-user-*.svg"
       - "beam-ui/public/assets/turkuaz-*.svg"
       - "themes/ragnar-classic/**"
       - "themes/levelup-modern/**"
@@ -42,6 +47,7 @@ on:
       - "tools/tests/test_levelup_modern_theme.py"
       - "tools/tests/test_turkuaz_branding.py"
       - "tools/tests/test_turkuaz_premium_theme.py"
+      - "tools/tests/test_turkuaz_reference_restore.py"
       - "tools/QA-THEME-BROWSER.py"
       - "themes/ragnar-legacy/**"
       - "tools/tests/test_ragnar_legacy_theme.py"
@@ -69,6 +75,8 @@ jobs:
         run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_branding.py' -v
       - name: Premium artwork SVG validity and visual safety contracts
         run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_premium_theme.py' -v
+      - name: User reference images and native buttons restore contract
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_reference_restore.py' -v
       - name: Extract inline Beam UI JavaScript for syntax validation
         shell: bash
         run: |

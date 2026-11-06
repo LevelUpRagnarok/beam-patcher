@@ -1,11 +1,11 @@
 # Dosya Yolu: .github/workflows/windows-setup-patch-qa.yml
-# Amac: Windows x64 Beam QA patch E2E ve YAYINLANMAYAN NSIS fallback smoke
+# Amac: Windows x64 Beam QA patch E2E; kurulum icin yalniz TurkuazInstaller kullanilir
 # Modul - GitHub Actions / Windows-only QA
-# Version: 0.3.0-candidate
-# Aciklama: BURAK-INS-001 geregi tekli Inno/NSIS artifactini yayinlama yok
+# Version: 0.4.0-candidate
+# Aciklama: Kurulum exe uretmez; paket yayinlama yalniz korumali Turkuaz gate'te
 # Bagimli Oldugu Katman: installer/windows/* | tools/QA-PATCH-E2E.py
 
-name: Beam Windows Patch QA and Private NSIS Smoke
+name: Beam Windows Patch Core QA
 
 on:
   pull_request:
@@ -44,7 +44,7 @@ concurrency:
 
 jobs:
   windows-qa-installer:
-    name: Windows x64 Rust BEAM E2E and installer
+    name: Windows x64 Rust BEAM E2E without installer
     runs-on: windows-latest
     timeout-minutes: 75
     steps:
@@ -76,45 +76,9 @@ jobs:
         shell: pwsh
       - name: Check installer workflow policy
         run: python tools/check_installer_workflows.py
-      - name: Locate or install NSIS fallback compiler (private QA)
+      - name: Distinguish Windows patch QA from Turkuaz-only product acceptance
         shell: pwsh
         run: |
-          $makensis = Join-Path "${env:ProgramFiles(x86)}" 'NSIS/makensis.exe'
-          if (-not (Test-Path -LiteralPath $makensis)) {
-            choco install nsis --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          if (-not (Test-Path -LiteralPath $makensis)) { throw 'NSIS backup compiler not available' }
-          "BEAM_NSIS_COMPILER=$makensis" >> $env:GITHUB_ENV
-      - name: Build NSIS recovery setup for isolated runner smoke (NO upload)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $exe = (Resolve-Path 'target/release/beam-patcher.exe').Path
-          $output = Join-Path (Get-Location).Path 'build/private-nsis-smoke'
-          New-Item -ItemType Directory -Force -Path $output | Out-Null
-          & $env:BEAM_NSIS_COMPILER '/V2' "/DBeamExe=$exe" "/DNsisOut=$output" 'installer/windows/BeamPatcher-NSIS-Backup.nsi'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $setup = Join-Path $output 'TurkuazRagnarokOnline-NSIS-BACKUP-QA-Setup.exe'
-          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'NSIS backup setup missing' }
-          $installed = Join-Path $env:LOCALAPPDATA 'Programs/TurkuazSoft/Turkuaz Ragnarok Online QA-NSIS-Backup'
-          $process = Start-Process -FilePath $setup -ArgumentList '/S' -PassThru -Wait
-          if ($process.ExitCode -ne 0) { throw "NSIS fallback install failed $($process.ExitCode)" }
-          $config = Join-Path $installed 'config.yml'
-          $binary = Join-Path $installed 'beam-patcher.exe'
-          if (-not (Test-Path $binary) -or -not (Test-Path $config)) { throw 'NSIS installed payload incomplete' }
-          $configRaw = Get-Content -LiteralPath $config -Raw
-          if (-not $configRaw.Contains('qa_only: true')) { throw 'NSIS must preserve the safe QA policy' }
-          if (-not $configRaw.Contains('NO_CLIENT_CONFIGURED.exe')) { throw 'NSIS must not launch a game' }
-          $uninst = Join-Path $installed 'Uninstall-NSIS-Backup.exe'
-          if (-not (Test-Path $uninst)) { throw 'NSIS uninstaller missing' }
-          $done = Start-Process -FilePath $uninst -ArgumentList '/S' -PassThru -Wait
-          if ($done.ExitCode -ne 0) { throw "NSIS fallback uninstall failed $($done.ExitCode)" }
-          if (Test-Path $binary) { throw 'NSIS uninstall left executable behind' }
-          Write-Host 'PRIVATE_NSIS_QA_OK -- never present this artifact to end users'
-      - name: No standalone installer publication without Turkuaz dual gate
-        shell: pwsh
-        run: |
-          Write-Host 'BURAK-INS-001: This is build/smoke QA ONLY.'
-          Write-Host 'No Inno, NSIS or single installer artifact is published.'
-          Write-Host 'Only a separate Turkuaz+NSIS dual gate can authorize distribution.'
+          Write-Host 'TURKUAZ-ONLY-001: Windows patch QA passes only core/format tests.'
+          Write-Host 'Only the separately protected TurkuazInstaller primary may be approved for distribution.'
+          Write-Host 'No installer built, uploaded or released by this QA workflow.'

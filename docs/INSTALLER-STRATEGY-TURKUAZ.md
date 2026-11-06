@@ -1,114 +1,86 @@
 <!--
-Dosya Yolu: docs/INSTALLER-STRATEGY-TURKUAZ.md
-Amac: Beam QA paketlemesinden TurkuazInstaller'a guvenli gecis plani ve kabul sinirlari
-Modul - Markdown documentation
-Version: 0.2.0-candidate
-Aciklama: Inno Setup gecici QA artifact olarak kalir; imzali Turkuaz manifest ve Velopack E2E tamamlaninca gecis yapilir
-Bagimli Oldugu Katman: installer/windows/BeamPatcher-QA.iss | TurkuazLabs/TurkuazInstaller/docs/PROJECT_INTEGRATION.md
+Dosya Yolu: REPO_ROOT/docs/INSTALLER-STRATEGY-TURKUAZ.md
+Amac: BeamPatcher tek TurkuazInstaller Windows dagitim ve guvenlik politikasini tanimlar
+Modul - Markdown / Installer Policy
+Version: 3.0.0-candidate
+Aciklama: Ikinci kurulum kaldirildi; imzasiz/test-signed dagitim yasaktir
+Bagimli Oldugu Katman: AGENTS.md | tools/verify_installer_primary.py
 -->
 
-# Beam installer: BURAK-INS-001, Turkuaz primary + NSIS private backup
+# BeamPatcher Windows installer — TurkuazInstaller only
 
-## Binding distribution policy — 2026-10-25
+**Status: POLICY CANDIDATE — NOT A SIGNED PRODUCT RELEASE.**
 
-**Never share Inno or NSIS as the user-facing setup.** One Windows
-CI orchestrator builds the actual TurkuazInstaller Community bootstrapper
-with the Beam Velopack package, plus an NSIS backup from the exact same
-commit/version. The NSIS fallback is private; the user-facing download
-is always the verified Turkuaz primary. Missing signer, detached CMS
-`.p7s`, independently pinned trust, product E2E or NSIS smoke is a
-fatal distribution blocker. A failed Turkuaz build does NOT promote NSIS.
+The only supported user-facing Windows installer for BeamPatcher is
+**TurkuazInstaller**. The former NSIS backup script, its compilation
+and install smoke, dual-output evidence and compulsory fallback policy
+are retired. No other independent installer may be distributed.
+The obsolete Inno QA source has also been deleted; neither an Inno
+nor an NSIS installer script is permitted in the current tree.
+CI rejects the reintroduction of .iss and .nsi installer source files.
 
-The previous Inno installer is retired from automatic artifact upload
-but retained as non-published historical QA source until migration
-testing is complete. The `windows-setup-patch-qa.yml` job now performs
-private NSIS smoke ONLY. The manual
-`.github/workflows/dual-installer-policy.yml` is the sole
-user-facing distribution path. Until its signed-metadata gate passes,
-**no new setup may be provided**. The earlier distributed QA executable
-is not a TurkuazInstaller package.
+## Three independent test layers
 
-This is a staged migration: **policy and build orchestration implemented;
-production signing, real Turkuaz product E2E and shareable primary
-NOT COMPLETE**.
+**Beam Windows Patch Core QA** builds and tests native Beam/Tauri and
+synthetic GRF 0x200 download/cache/integrity without producing a setup.
 
+**Beam Rust Installer Candidate Compatibility** pins current Rust
+TurkuazInstaller source, builds a real Beam QA EXE, generates a .tzpkg
+and manifest, checks package bytes and inventory, and exercises
+install/update/repair/rollback/uninstall with an ephemeral self-signed
+CMS certificate. It also builds **one** temporary TurkuazSetup.exe,
+test-signs it with Authenticode and uses its CLI install-self path.
+The GUI wizard and actual game client are **not** executed.
+No test EXE is uploaded or distributed.
 
-## Why Inno was used
+**Beam Rust TurkuazInstaller Primary Only** performs contract and Windows
+security negatives on PR. Its protected product job requires manual
+workflow_dispatch and signing-environment authorization, signed
+manifest/CMS, an independently provisioned publisher certificate
+and successful native Windows acceptance. Missing real trust or
+E2E evidence must fail closed; no standalone artifact is shareable.
 
-The October 25 Beam QA pipeline had a directly testable x64 Inno
-Setup compilation/quiet-install/upgrade/uninstall chain. This was a
-**scoped test artifact**, NOT an installer-platform decision. User-facing
-production distribution should be tracked as a separate TurkuazInstaller
-migration, not silently made dependent on the transient Inno QA flow.
+## Single pinned Rust installer upstream
 
-Upstream community:
-https://github.com/TurkuazLabs/TurkuazInstaller
+The protected workflow uses only Rust TurkuazInstaller from pinned SHA
+`456a34679661978afc717cc5b08ece11cb0b9a94`.
+The single user-facing output is `TurkuazSetup.exe`. Rust
+`.tzpkg`/`.tzsetup`, `release.yaml`, `release.p7s` and public
+`manifest-trust.yaml` are verified package inputs, not extra installers.
 
-Upstream project integration contract:
-https://github.com/TurkuazLabs/TurkuazInstaller/blob/main/docs/PROJECT_INTEGRATION.md
+Manual protected `windows-installer-signing` requires independently
+supplied signed Rust files and `turkuaz-primary-e2e.json` native
+acceptance evidence through `BEAM_VERIFIED_RUST_TURKUAZ_BUNDLE`.
+The publisher subject and SHA-256 pin come from protected variables
+`BEAM_TURKUAZ_PUBLISHER_SUBJECT` and `BEAM_TURKUAZ_CERT_SHA256`.
+The exact signed release package bytes must match the freshly compiled
+Beam Rust package; a bounded ZIP layout, manifest identity, detached
+CMS, Authenticode and hosted Windows install/uninstall are independently
+verified. Windows 10/11 GUI and migration approvals must also be present
+in external native acceptance evidence. Otherwise upload is prohibited.
 
-The upstream Windows Desktop, Velopack E2E and local unsigned test
-packaging checks are passing. But their unsigned local test ZIP cannot be
-redistributed as a signed product installer.
+No legacy installer runtime, secondary setup, public signer key or
+automatic release remains in this active product workflow.
 
-## Current tools and acceptance gates
+## Required product acceptance
 
-- Main Beam patch motor: Rust/Windows x64, independent of setup system.
-- New policy/negative tests: `tools/check_installer_workflows.py`,
-  `tools/tests/test_installer_distribution_policy.py`.
-- Build/pair gate: `tools/verify_installer_pair.py` checks exact source
-  SHA, version, primary/fallback role, supplied E2E results and independent
-  checksums; this is *not a standalone signature verifier*.
-- The Windows workflow checks genuine Turkuaz Authenticode, but a
-  signing-protected E2E bundle and real detached CMS/trust verifier remain
-  REQUIRED. No unsigned development build is end-user shareable.
-- NSIS source: `installer/windows/BeamPatcher-NSIS-Backup.nsi`.
-  It installs only QA launcher/config and preserves the user's config.
-- Pinned upstream Turkuaz source commit:
-  `1048931bf7498ab4d4440414c4463e6ee5e7421e` (Community).
+Before publishing any Turkuaz primary EXE, verify the exact Beam and
+Turkuaz source commits, win-x64 QA product/version, artifact hashes,
+real signed raw manifest and detached CMS, external certificate
+subject/SHA-256 pin, valid Windows Authenticode trust, and real native
+install, update, repair, rollback, uninstall and user-file preservation.
 
-## Required work before switching Beam installers
+Acceptance must also cover non-admin installs, Unicode/space paths,
+shortcuts, registry, the actual GUI wizard and clean Windows 10/11.
+Prior installations may have their own uninstaller and user files:
+migration must require explicit consent and avoid automatic deletion.
 
-1. Pin permanent package ID `levelupgt.beampatcher` and per-user Windows x64
-   destination. Decide whether QA remains a separate package identity
-   `levelupgt.beampatcher.qa` before a public installer is issued.
-2. Place writable `config.yml`, theme choice, game-directory selection and
-   patch cache in user-writable app data, not versioned/replaceable Velopack
-   `current`. Maintain explicit migration from existing Inno app directory.
-3. Produce a **full Velopack nupkg + Setup.exe** using the actual Beam UI/EXE
-   with the four local theme image assets, then verify correct WebView2
-   rendering and theme selection after install.
-4. Generate a versioned project manifest from the real artifact SHA-256,
-   byte size, package/channel and per-user target. Do NOT commit placeholder
-   artifact digest as a release manifest.
-5. Sign the exact raw manifest with a detached CMS `.p7s` and separately
-   provision package-scoped signer subject / certificate SHA256 pins in
-   `%LOCALAPPDATA%/TurkuazInstaller/config/manifest-trust.yml`.
-   Production TurkuazInstaller binaries and distributable artifacts need
-   their corresponding signing and preflight approvals.
-6. Execute isolated Windows clean install, same-version repair, next-version
-   update, previous-version rollback, uninstall, shortcut and config
-   preservation tests against a **signed test fixture**.
-7. Verify non-admin install, Unicode/spaces in path, older Inno install
-   migration, duplicate installed-app detection and tampered manifest/artifact
-   refusal. Never target a real player's GRF for installer testing.
-8. Only after all gates pass, retire Inno Setup from the production pipeline.
-   The current QA script must remain available until replacement passes.
+The Python structural check in tools/verify_installer_primary.py is
+NOT a cryptographic signature verifier. Protected workflow calls
+tools/Confirm-TurkuazTrust.ps1 separately, and independent native
+product evidence is still required. The protected signing job remains
+NOT_RUN unless explicitly dispatched with actual signing materials.
 
-## Known current artifact state
-
-- `installer/windows/BeamPatcher-QA.iss`: operational unsigned standalone
-  QA installer. It is not a TurkuazInstaller package.
-- `installer/windows/config.qa.yml`: offline/loopback-only, QA GRF;
-  client launch and real game settings are disabled.
-- `beam-ui/public/assets/1.png` through `4.png` are currently identical
-  blobs. Separate approved LevelUp Games promotional art is an asset task,
-  not a dependency on the remote Ragnarok patch feed.
-- `b1glord/ragnarokclientpatch` is a game update channel containing THOR
-  archives, not an approved source of launcher-specific banner PNG/JPG.
-- Release signing keys/cert identities and real Ragnarok 2022 client
-  compatibility are **not established** by the Beam QA tests.
-
-The migration is **NOT IMPLEMENTED / NOT RELEASED**. Do not describe it as
-production-ready until a separate pinned Turkuaz integration PR runs the
-upstream signed manifest + full-package acceptance.
+No main merge or production release is authorized by a green QA run.
+See docs/RUST-INSTALLER-BEAM-COMPAT.md and
+docs/WINDOWS-SETUP-PATCH-QA.md for test boundaries.

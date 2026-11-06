@@ -17,9 +17,9 @@ app:
   video_background_enabled: false
   video_background_file: null
   grid_images:
-    - "assets/turkuaz-castle.svg"
-    - "assets/turkuaz-skycity.svg"
-    - "assets/turkuaz-poring.svg"
+    - "assets/turkuaz-user-classic-castle.svg"
+    - "assets/turkuaz-user-adventurers.svg"
+    - "assets/turkuaz-user-poring.svg"
     - "assets/turkuaz-dungeon.svg"
   limited_items: []
   social_links: []

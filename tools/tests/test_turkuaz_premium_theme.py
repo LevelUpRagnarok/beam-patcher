@@ -42,11 +42,19 @@ class TurkuazPremiumThemeTests(unittest.TestCase):
                     self.assertNotIn(forbidden, payload.replace("http://www.w3.org/2000/svg", ""))
                 else:
                     self.assertNotIn(forbidden, payload)
-            self.assertIn("assets/" + filename, HTML)
-            self.assertIn("assets/" + filename, QA)
-            self.assertIn("assets/" + filename, PROFILE)
             contents.append(payload)
         self.assertEqual(len(set(contents)), len(FILES), "Artwork must not repeat the same placeholder")
+        # Original vector concepts remain optional; default cards use user references.
+        selected = (
+            "turkuaz-user-classic-castle.svg",
+            "turkuaz-user-adventurers.svg",
+            "turkuaz-user-poring.svg",
+            "turkuaz-dungeon.svg",
+        )
+        for name in selected:
+            self.assertIn("assets/" + name, HTML)
+            self.assertIn("assets/" + name, QA)
+            self.assertIn("assets/" + name, PROFILE)
 
     def test_premium_styles_are_scoped_and_keep_native_handlers(self):
         self.assertIn('href="assets/turkuaz-premium.css"', HTML)
