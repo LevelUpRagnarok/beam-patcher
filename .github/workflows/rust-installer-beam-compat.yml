@@ -1,0 +1,144 @@
+# Dosya Yolu: REPO_ROOT/.github/workflows/rust-installer-beam-compat.yml
+# Amac: Rust TurkuazInstaller paketini mevcut Beam QA EXE ile sandbox'ta sinamak
+# Modul - GitHub Actions / Unsigned Rust compatibility probe
+# Version: 1.3.0-candidate
+# Aciklama: Turkuaz Rust primary signed-fixture smoke, tek kurulum; no production release
+# Bagimli Oldugu Katman: tools/check_rust_installer_candidate.py | TurkuazInstaller/rust
+
+name: Beam Rust Installer Candidate Compatibility
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/rust-installer-beam-compat.yml"
+      - "tools/check_rust_installer_candidate.py"
+      - "tools/tests/test_rust_installer_candidate.py"
+      - "tools/Test-BeamRustEphemeralLifecycle.ps1"
+      - "docs/RUST-INSTALLER-BEAM-COMPAT.md"
+      - "installer/windows/config.qa.yml"
+      - "beam-patcher/**"
+      - "beam-core/**"
+      - "beam-formats/**"
+      - "beam-ui/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beam-rust-installer-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-contract:
+    name: Offline Rust candidate archive/manifest negative tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run negative fixtures without Rust build or signing keys
+        run: python -m unittest discover -s tools/tests -p test_rust_installer_candidate.py -v
+
+  windows-candidate:
+    name: Windows Beam Rust tzpkg and ephemeral CMS lifecycle
+    needs: offline-contract
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact Beam PR source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout pinned Rust TurkuazInstaller source (separate from legacy gate)
+        uses: actions/checkout@v4
+        with:
+          repository: TurkuazLabs/TurkuazInstaller
+          ref: 456a34679661978afc717cc5b08ece11cb0b9a94
+          path: build/turkuaz-rust
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile real Beam Windows EXE (QA profile only)
+        shell: pwsh
+        run: |
+          cargo build --release -p beam-patcher
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path -LiteralPath target/release/beam-patcher.exe -PathType Leaf)) {
+            throw 'Beam executable missing'
+          }
+      - name: Test upstream Rust package engine with locked dependencies
+        shell: pwsh
+        run: |
+          cargo test --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-package-engine
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile upstream Rust CLI for unsigned QA package generation
+        shell: pwsh
+        run: |
+          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer --release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Generate v2 tzpkg from actual Beam EXE, QA config and theme assets
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = (Get-Location).Path
+          $upstream = Join-Path $root 'build/turkuaz-rust'
+          $actual = (& git -C $upstream rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actual -cne '456a34679661978afc717cc5b08ece11cb0b9a94') {
+            throw 'Rust upstream commit not pinned'
+          }
+          $stage = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-payload'
+          $out = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-output'
+          New-Item -ItemType Directory -Force -Path $stage, $out | Out-Null
+          Copy-Item -LiteralPath 'target/release/beam-patcher.exe' -Destination (Join-Path $stage 'beam-patcher.exe')
+          Copy-Item -LiteralPath 'installer/windows/config.qa.yml' -Destination (Join-Path $stage 'config.yml')
+          Copy-Item -LiteralPath 'installer/windows/README-QA.txt' -Destination (Join-Path $stage 'README-QA.txt')
+          Copy-Item -LiteralPath 'beam-ui/public/assets' -Destination (Join-Path $stage 'assets') -Recurse
+          $cli = Join-Path $upstream 'rust/target/release/turkuaz-installer.exe'
+          if (-not (Test-Path -LiteralPath $cli -PathType Leaf)) { throw 'Rust candidate CLI missing' }
+          # Separate CLI startup / command dispatch from package writer faults.
+          & $cli --version
+          if ($LASTEXITCODE -ne 0) { throw 'Rust CLI startup/version smoke failed' }
+          & $cli build-package --help
+          if ($LASTEXITCODE -ne 0) { throw 'Rust CLI build-package dispatch smoke failed' }
+          $package = Join-Path $out 'beam-qa-candidate.tzpkg'
+          $manifest = Join-Path $out 'unsigned-beam-qa-manifest.yaml'
+          & $cli build-package --package-id levelupgt.beampatcher.qa --version 1.0.1 --source $stage --output $package --executable beam-patcher.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $cli describe-package --package-id levelupgt.beampatcher.qa --version 1.0.1 --channel beta --package $package --uri https://fixtures.invalid/beam-qa-candidate.tzpkg --target (Join-Path $env:RUNNER_TEMP 'never-install-beam-qa') --output $manifest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/check_rust_installer_candidate.py --package $package --manifest $manifest --payload $stage --upstream-sha $actual --package-id levelupgt.beampatcher.qa --version 1.0.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host 'NO_SIGNER_NO_INSTALL_NO_UPLOAD: Rust package/manifest candidate accepted structurally'
+      - name: Build pinned Turkuaz Windows setup GUI stub without replacing the tested CLI
+        shell: pwsh
+        run: |
+          $root = (Get-Location).Path
+          $upstream = Join-Path $root 'build/turkuaz-rust'
+          $cli = Join-Path $upstream 'rust/target/release/turkuaz-installer.exe'
+          $output = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-output'
+          $headless = Join-Path $output 'turkuaz-cli-headless.exe'
+          $stub = Join-Path $output 'turkuaz-setup-gui-stub.exe'
+          Copy-Item -LiteralPath $cli -Destination $headless
+          cargo build --locked --manifest-path build/turkuaz-rust/rust/Cargo.toml -p turkuaz-installer-cli --bin turkuaz-installer --release --features setup-gui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item -LiteralPath $cli -Destination $stub
+          Copy-Item -LiteralPath $headless -Destination $cli -Force
+          if (-not (Test-Path -LiteralPath $stub -PathType Leaf)) { throw 'Rust GUI setup stub missing' }
+      - name: Test offline Rust install/update/repair/rollback/uninstall with ephemeral CI certificate
+        shell: pwsh
+        env:
+          BEAM_RUNNER_KIND: ${{ runner.environment }}
+        run: |
+          $root = (Get-Location).Path
+          $cli = Join-Path $root 'build/turkuaz-rust/rust/target/release/turkuaz-installer.exe'
+          $payload = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-payload'
+          $stub = Join-Path $env:RUNNER_TEMP 'beam-rust-candidate-output/turkuaz-setup-gui-stub.exe'
+          & ./tools/Test-BeamRustEphemeralLifecycle.ps1 -InstallerPath $cli -PayloadDirectory $payload -GuiStubPath $stub
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Turkuaz primary test setup is never published
+        shell: pwsh
+        run: |
+          Write-Host 'BURAK-INS-001 remains on its separately pinned legacy gate.'
+          Write-Host 'Disposable CI CMS/Authenticode only; Turkuaz primary test setup is never uploaded.'
+          Write-Host 'No game launched, no production publisher signature, no signed product acceptance or release.'

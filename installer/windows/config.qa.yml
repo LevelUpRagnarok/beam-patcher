@@ -17,10 +17,10 @@ app:
   video_background_enabled: false
   video_background_file: null
   grid_images:
-    - "assets/1.png"
-    - "assets/2.png"
-    - "assets/3.png"
-    - "assets/4.png"
+    - "assets/turkuaz-user-classic-castle.svg"
+    - "assets/turkuaz-user-adventurers.svg"
+    - "assets/turkuaz-user-poring.svg"
+    - "assets/turkuaz-dungeon.svg"
   limited_items: []
   social_links: []
   discord_url: null

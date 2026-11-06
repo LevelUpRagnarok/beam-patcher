@@ -1,9 +1,9 @@
 # Dosya Yolu: REPO_ROOT/tools/Confirm-TurkuazTrust.ps1
-# Amac: Turkuaz primary installer manifest CMS, external pin ve Authenticode gercek dogrulama
+# Amac: Rust TurkuazSetup Authenticode, detached CMS ve harici pin dogrulamasi
 # Modul - PowerShell / Protected Windows signing gate
-# Version: 1.0.0-candidate
-# Aciklama: PASS raporu yalniz ilave test; bu kod gercek byte imza zincirini kontrol eder
-# Bagimli Oldugu Katman: tools/verify_installer_pair.py | TurkuazInstaller/docs/MANIFEST_TRUST.md
+# Version: 3.0.0-candidate
+# Aciklama: Gercek Windows trust zinciri ve bagimsiz publisher pin; Rust release bytes bazinda
+# Bagimli Oldugu Katman: tools/verify_installer_primary.py | TurkuazInstaller/rust/CLI.md
 
 [CmdletBinding()]
 param(
@@ -14,73 +14,96 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$Primary = (Resolve-Path -LiteralPath $PrimaryDirectory).Path
+$Primary = (Resolve-Path -LiteralPath $PrimaryDirectory -ErrorAction Stop).ProviderPath
 $CertPin = $CertificateSha256.Trim().ToLowerInvariant()
 if ($CertPin -notmatch '^[a-f0-9]{64}$' -or [string]::IsNullOrWhiteSpace($PublisherSubject)) {
-    throw 'BURAK-INS-001: independent signer subject and 64-hex SHA256 pin required'
+    throw 'TURKUAZ-RUST-ONLY: independent publisher subject and SHA256 cert pin required'
 }
-$BinPaths = @(
-    'TurkuazInstaller.Bootstrapper.exe',
-    'app/TurkuazInstaller.WinUI.exe',
-    'cli/TurkuazInstaller.Cli.exe'
+# SEC-BEAM-RUST-TRUST-001: size, regular-file and reparse preflight
+# before decoding certificates, CMS or untrusted manifest bytes.
+$Manifest = Join-Path $Primary 'release.yaml'
+$Signature = Join-Path $Primary 'release.p7s'
+$Trust = Join-Path $Primary 'manifest-trust.yaml'
+$Setup = Join-Path $Primary 'TurkuazSetup.exe'
+$Bundle = Join-Path $Primary 'Beam.tzsetup'
+$Package = Join-Path $Primary 'Beam.tzpkg'
+$Inputs = @(
+    @{ Path = $Manifest; Limit = 1048576; Label = 'release manifest' },
+    @{ Path = $Signature; Limit = 262144; Label = 'detached CMS signature' },
+    @{ Path = $Trust; Limit = 65536; Label = 'external trust policy' },
+    @{ Path = $Setup; Limit = 8589934592; Label = 'Rust primary EXE' },
+    @{ Path = $Bundle; Limit = 8589934592; Label = 'Rust signed bundle' },
+    @{ Path = $Package; Limit = 8589934592; Label = 'Rust application tzpkg' }
 )
-foreach ($Rel in $BinPaths) {
-    $Binary = Join-Path $Primary $Rel
-    if (-not (Test-Path -LiteralPath $Binary -PathType Leaf)) { throw "Missing signed Turkuaz executable: $Rel" }
-    $Sig = Get-AuthenticodeSignature -LiteralPath $Binary
-    if ($Sig.Status -ne 'Valid' -or $null -eq $Sig.SignerCertificate) {
-        throw "Turkuaz binary Authenticode not trusted: $Rel, $($Sig.Status)"
+foreach ($Entry in $Inputs) {
+    if (-not (Test-Path -LiteralPath $Entry.Path -PathType Leaf)) {
+        throw "Missing Rust release input: $($Entry.Label)"
     }
-    $Sign = $Sig.SignerCertificate
-    $Hash = [Convert]::ToHexString(
-        [Security.Cryptography.SHA256]::HashData($Sign.RawData)
-    ).ToLowerInvariant()
-    if ($Sign.Subject -cne $PublisherSubject -or $Hash -cne $CertPin) {
-        throw "Turkuaz publisher/certificate pin mismatch: $Rel"
+    $Meta = Get-Item -LiteralPath $Entry.Path
+    if (($Meta.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "Linked Rust release input refused: $($Entry.Label)"
+    }
+    if ($Meta.Length -eq 0 -or $Meta.Length -gt $Entry.Limit) {
+        throw "Rust release input size limit exceeded or empty: $($Entry.Label)"
     }
 }
-$Manifest = Join-Path $Primary 'installer-manifest.yml'
-$Signature = Join-Path $Primary 'installer-manifest.yml.p7s'
-$Trust = Join-Path $Primary 'manifest-trust.yml'
-foreach ($Path in @($Manifest,$Signature,$Trust)) {
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
-        throw "Missing signed manifest/trust input: $Path"
-    }
+# SEC-BEAM-RUST-TRUST-002: never accept a test signature as a
+# production Windows publisher. Validate actual trust chain and pinned
+# signer of THE ONE user-facing TurkuazSetup.exe.
+$Auth = Get-AuthenticodeSignature -LiteralPath $Setup
+if ($Auth.Status -ne 'Valid' -or $null -eq $Auth.SignerCertificate) {
+    throw "Rust TurkuazSetup Authenticode not trusted: $($Auth.Status)"
 }
-
-# Check the detached CMS signature against the exact bytes saved on disk.
+$PublisherCert = $Auth.SignerCertificate
+$PublisherHash = [Convert]::ToHexString(
+    [Security.Cryptography.SHA256]::HashData($PublisherCert.RawData)
+).ToLowerInvariant()
+if ($PublisherCert.Subject -cne $PublisherSubject -or $PublisherHash -cne $CertPin) {
+    throw 'Turkuaz Rust publisher/certificate pin mismatch'
+}
+$Now = [DateTime]::UtcNow
+if ($Now -lt $PublisherCert.NotBefore.ToUniversalTime() -or
+    $Now -gt $PublisherCert.NotAfter.ToUniversalTime()) {
+    throw 'Turkuaz Rust Authenticode signer is outside its validity period'
+}
+# SEC-BEAM-RUST-TRUST-003: validate one detached CMS signature on the
+# exact signed Rust release.yaml bytes, including the Windows trust chain.
 Add-Type -AssemblyName 'System.Security.Cryptography.Pkcs'
 $Content = [Security.Cryptography.Pkcs.ContentInfo]::new([IO.File]::ReadAllBytes($Manifest))
 $Cms = [Security.Cryptography.Pkcs.SignedCms]::new($Content, $true)
 $Cms.Decode([IO.File]::ReadAllBytes($Signature))
-$Cms.CheckSignature($true)
+$Cms.CheckSignature($false)
 if ($Cms.SignerInfos.Count -ne 1 -or $null -eq $Cms.SignerInfos[0].Certificate) {
-    throw 'Expected one detached CMS manifest signer'
+    throw 'Expected exactly one detached CMS Rust manifest signer'
 }
-$Signer = $Cms.SignerInfos[0].Certificate
-$SignerSha = [Convert]::ToHexString(
-    [Security.Cryptography.SHA256]::HashData($Signer.RawData)
+$CmsSigner = $Cms.SignerInfos[0].Certificate
+$CmsSha = [Convert]::ToHexString(
+    [Security.Cryptography.SHA256]::HashData($CmsSigner.RawData)
 ).ToLowerInvariant()
-if ($Signer.Subject -cne $PublisherSubject -or $SignerSha -cne $CertPin) {
-    throw 'Detached CMS manifest signer does not match independent certificate pin'
+if ($CmsSigner.Subject -cne $PublisherSubject -or $CmsSha -cne $CertPin) {
+    throw 'Rust CMS signer does not match independent certificate pin'
 }
-$TrustText = Get-Content -LiteralPath $Trust -Raw -Encoding utf8
-if (-not $TrustText.Contains("id: $PackageId") -or
-    -not $TrustText.Contains("certificate_sha256: $CertPin") -or
-    -not $TrustText.Contains("publisher_subject: $PublisherSubject")) {
-    throw 'External trust store does not contain the exact package and publisher pin'
+if ($Now -lt $CmsSigner.NotBefore.ToUniversalTime() -or
+    $Now -gt $CmsSigner.NotAfter.ToUniversalTime()) {
+    throw 'Detached Rust CMS signer certificate is outside its validity period'
 }
-$ManifestText = Get-Content -LiteralPath $Manifest -Raw -Encoding utf8
-if (-not $ManifestText.Contains("id: $PackageId") -or
-    -not $ManifestText.Contains('version: 1.0.1')) {
-    throw 'Signed manifest does not identify the pinned Beam QA package/version'
+# This externally supplied policy is NOT allowed to select a different
+# publisher from the protected GitHub environment's pinned certificate.
+$TrustText = [Text.UTF8Encoding]::new($false, $true).GetString(
+    [IO.File]::ReadAllBytes($Trust)
+)
+$ExpectedFields = @{
+    'id' = $PackageId
+    'certificate_sha256' = $CertPin
+    'publisher_subject' = $PublisherSubject
 }
-$Setup = Join-Path $Primary 'Beam-Velopack-Setup.exe'
-$Package = Join-Path $Primary 'Beam-full.nupkg'
-$HashOfSetup = (Get-FileHash -LiteralPath $Setup -Algorithm SHA256).Hash.ToLowerInvariant()
-$HashOfNupkg = (Get-FileHash -LiteralPath $Package -Algorithm SHA256).Hash.ToLowerInvariant()
-# At least one exact artifact hash must be bound by the signed manifest.
-if (-not $ManifestText.Contains($HashOfSetup) -and -not $ManifestText.Contains($HashOfNupkg)) {
-    throw 'Signed Turkuaz manifest does not bind actual Velopack artifact hash'
+foreach ($Entry in $ExpectedFields.GetEnumerator()) {
+    $field = [regex]::Escape($Entry.Key)
+    $value = [regex]::Escape($Entry.Value)
+    $pattern = '(?m)^\s*' + $field + ':\s*["' + [char]39 + ']?' +
+               $value + '["' + [char]39 + ']?\s*$'
+    if (-not [regex]::IsMatch($TrustText, $pattern)) {
+        throw "External Rust trust policy missing pinned field: $($Entry.Key)"
+    }
 }
-Write-Output 'BURAK-INS-001_REAL_SIGNATURE_AND_EXTERNAL_PIN_OK'
+Write-Output 'TURKUAZ_RUST_REAL_CMS_AUTHENTICODE_AND_EXTERNAL_PIN_OK'

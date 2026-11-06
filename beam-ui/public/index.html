@@ -1174,6 +1174,10 @@
     <link id="ragnar-legacy-theme-css" rel="stylesheet" href="assets/ragnar-legacy.css" disabled>
     <link id="ragnar-classic-theme-css" rel="stylesheet" href="assets/ragnar-classic.css" disabled>
     <link id="levelup-modern-theme-css" rel="stylesheet" href="assets/levelup-modern.css" disabled>
+    <!-- Shared visual finishing layer; theme IDs and native actions are unchanged. -->
+    <link rel="stylesheet" href="assets/turkuaz-premium.css">
+    <!-- Reference restoration layer: scoped to Turkuaz Klasik / Modern visual themes. -->
+    <link rel="stylesheet" href="assets/turkuaz-reference-restore.css">
 </head>
 <body>
     <video id="video-background" autoplay loop muted playsinline></video>
@@ -1209,6 +1213,9 @@
             </div>
         </div>
 
+        <!-- The artwork comes from the supplied reference screenshot. Native controls stay real. -->
+        <div class="turkuaz-reference-banner" role="img" aria-label="Ragnarok Online klasik başlatıcı: karakterler, kale ve Poring illüstrasyonu"></div>
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="content-panel">
@@ -1225,31 +1232,31 @@
                     <!-- Visible only in the screenshot-inspired classic theme. -->
                     <aside class="classic-ad-rail" aria-label="Classic Ragnar highlights">
                         <div class="classic-ad-card classic-ad-card--care">
-                            <span>TURKUAZ RO</span><small>CLASSIC ADVENTURE</small>
+                            <span>TURKUAZ RO</span><small>KLASİK MACERA</small>
                         </div>
                         <div class="classic-ad-card classic-ad-card--life">
-                            <span>EXTRA LIFE</span><small>EVENTS &amp; REWARDS</small>
+                            <span>PORING</span><small>RENKLİ DÜNYA</small>
                         </div>
                         <div class="classic-ad-card classic-ad-card--clicker">
-                            <span>OVERLOOK</span><small>DUNGEON UPDATE</small>
+                            <span>OVERLOOK</span><small>ZİNDAN GÜNCELLEMESİ</small>
                         </div>
                     </aside>
                     <!-- Left: News Section -->
                     <div class="news-section-main">
                         <div class="news-filter-buttons">
                             <button class="filter-btn active" onclick="filterNews('event')">
-                                <i class="ph ph-calendar-blank"></i> Event
+                                <i class="ph ph-calendar-blank"></i> Etkinlik
                             </button>
                             <button class="filter-btn" onclick="filterNews('promo')">
-                                <i class="ph ph-gift"></i> Promo
+                                <i class="ph ph-gift"></i> Kampanya
                             </button>
                             <button class="filter-btn" onclick="filterNews('update')">
-                                <i class="ph ph-megaphone"></i> Update
+                                <i class="ph ph-megaphone"></i> Güncelleme
                             </button>
                         </div>
                         <div class="news-cards-wrapper">
                             <div class="news-cards-container" id="news-cards">
-                                <div class="loading">Loading news...</div>
+                                <div class="loading">Haberler yükleniyor...</div>
                             </div>
                         </div>
                     </div>
@@ -1258,16 +1265,16 @@
                     <div class="image-grid-section">
                         <div class="image-grid" id="image-grid">
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-1').src)">
-                                <img src="" alt="Image 1" id="grid-img-1" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok kale manzarası" id="grid-img-1" oncontextmenu="return false">
                             </div>
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-2').src)">
-                                <img src="" alt="Image 2" id="grid-img-2" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok maceracı loncası" id="grid-img-2" oncontextmenu="return false">
                             </div>
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-3').src)">
-                                <img src="" alt="Image 3" id="grid-img-3" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok Poring ve doğa" id="grid-img-3" oncontextmenu="return false">
                             </div>
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-4').src)">
-                                <img src="" alt="Image 4" id="grid-img-4" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok zindan manzarası" id="grid-img-4" oncontextmenu="return false">
                             </div>
                         </div>
                     </div>
@@ -1280,19 +1287,19 @@
                         <img src="" alt="Server Status" id="status-image" class="status-image" oncontextmenu="return false" style="display: none;">
                         <div class="status-placeholder" id="status-placeholder">
                             <i class="ph ph-image"></i>
-                            <span>Server Status</span>
+                            <span>Sunucu Durumu</span>
                         </div>
                     </div>
 
                     <!-- Progress & Buttons -->
                     <div class="progress-section">
-                        <div class="progress-label" id="progress-label">Ready to patch… 0% (0 MB / 0 GB)</div>
+                        <div class="progress-label" id="progress-label">Güncelleme hazır… 0% (0 MB / 0 GB)</div>
                         <div class="progress-bar-container">
                             <div class="progress-bar" id="progress-bar"></div>
                         </div>
                         <div class="button-row">
                             <button class="btn-play-now" id="play-button" onclick="handlePlayButton()">Play Now</button>
-                            <button class="btn-register" id="register-btn-main" title="Register">Register</button>
+                            <button class="btn-register" id="register-btn-main" title="Kayıt Ol">Kayıt Ol</button>
                             <button class="btn-action-small" id="theme-settings-open" onclick="openThemeSettings()" title="Görünüm ve oyun ayarları" aria-label="Görünüm ve oyun ayarları"><i class="ph ph-gear"></i></button>
                             <button class="btn-action-small" onclick="manualPatch()" title="Manual Patch"><i class="ph ph-folder-open"></i></button>
                             <button class="btn-action-small" onclick="resetCache()" title="Reset Cache"><i class="ph ph-arrow-clockwise"></i></button>
@@ -1955,7 +1962,8 @@
         // PACKAGED ASSET CONTRACT: Tauri embeds public/assets in the frontend.
         // Do not try to resolve these URLs as loose files next to an Inno EXE.
         const builtInGridImages = Object.freeze([
-            'assets/1.png', 'assets/2.png', 'assets/3.png', 'assets/4.png'
+            'assets/turkuaz-user-classic-castle.svg', 'assets/turkuaz-user-adventurers.svg',
+            'assets/turkuaz-user-poring.svg', 'assets/turkuaz-dungeon.svg'
         ]);
 
         async function loadImageGrid(config) {
@@ -1989,7 +1997,7 @@
                 } else if (/^https?:\/\//i.test(imagePath)) {
                     // External artwork is opt-in only via an explicit config URL.
                     img.src = imagePath;
-                } else if (/^assets\/[a-zA-Z0-9_.-]+\.(?:png|jpe?g|webp|gif)$/i.test(imagePath)) {
+                } else if (/^assets\/[a-zA-Z0-9_.-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(imagePath)) {
                     // Always load trusted bundled images through the page origin:
                     // tauri://localhost/assets/N.png (or localhost browser QA).
                     img.src = new URL(imagePath, document.baseURI).href;
