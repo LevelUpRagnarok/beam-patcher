@@ -1,4 +1,4 @@
-LevelUp Games Beam Patcher QA - TEST ONLY
+Turkuaz Ragnarok Online QA - TEST ONLY
 ========================================
 
 This installer contains only the Beam launcher/patcher and a safe configuration.

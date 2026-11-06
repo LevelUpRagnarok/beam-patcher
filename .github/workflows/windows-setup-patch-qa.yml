@@ -1,11 +1,11 @@
 # Dosya Yolu: .github/workflows/windows-setup-patch-qa.yml
-# Amac: Gercek Windows x64 Beam QA exe + Inno Setup artifact ve local patch E2E
+# Amac: Windows x64 Beam QA patch E2E; kurulum icin yalniz TurkuazInstaller kullanilir
 # Modul - GitHub Actions / Windows-only QA
-# Version: 0.2.0-candidate
-# Aciklama: No tags/releases, no live GRF, isolated HTTP fixture and installer smoke
+# Version: 0.4.0-candidate
+# Aciklama: Kurulum exe uretmez; paket yayinlama yalniz korumali Turkuaz gate'te
 # Bagimli Oldugu Katman: installer/windows/* | tools/QA-PATCH-E2E.py
 
-name: Beam Windows Setup and Patch QA
+name: Beam Windows Patch Core QA
 
 on:
   pull_request:
@@ -16,6 +16,8 @@ on:
       - "beam-core/**"
       - "beam-formats/**"
       - "tools/QA-PATCH-E2E.py"
+      - "tools/check_installer_workflows.py"
+      - "tools/verify_installer_pair.py"
       - "tools/tests/prepare_rust_beam_fixture.py"
       - "tools/build_map_beam.py"
       - ".github/workflows/windows-setup-patch-qa.yml"
@@ -42,7 +44,7 @@ concurrency:
 
 jobs:
   windows-qa-installer:
-    name: Windows x64 Rust BEAM E2E and installer
+    name: Windows x64 Rust BEAM E2E without installer
     runs-on: windows-latest
     timeout-minutes: 75
     steps:
@@ -72,75 +74,11 @@ jobs:
           python tools/QA-PATCH-E2E.py --exe target/release/beam-patcher.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         shell: pwsh
-      - name: Locate or install Inno Setup compiler
+      - name: Check installer workflow policy
+        run: python tools/check_installer_workflows.py
+      - name: Distinguish Windows patch QA from Turkuaz-only product acceptance
         shell: pwsh
         run: |
-          $iscc = Join-Path "${env:ProgramFiles(x86)}" "Inno Setup 6/ISCC.exe"
-          if (-not (Test-Path -LiteralPath $iscc)) {
-            choco install innosetup --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          if (-not (Test-Path -LiteralPath $iscc)) { throw "ISCC.exe was not installed" }
-          "BEAM_QA_ISCC=$iscc" >> $env:GITHUB_ENV
-      - name: Build per-user unsigned TEST ONLY setup (no release)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $exe = (Resolve-Path 'target/release/beam-patcher.exe').Path
-          $out = Join-Path (Get-Location).Path 'build/windows-setup-qa'
-          New-Item -ItemType Directory -Force -Path $out | Out-Null
-          & $env:BEAM_QA_ISCC "/DBeamExe=$exe" "/DSetupOut=$out" 'installer/windows/BeamPatcher-QA.iss'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $setup = Join-Path $out 'LevelUpGames-BeamPatcher-QA-Setup.exe'
-          if (-not (Test-Path -LiteralPath $setup)) { throw "Inno Setup output missing" }
-          $sha = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          $bytes = (Get-Item -LiteralPath $setup).Length
-          @{ schema='levelupgt.beam.windows-setup-qa.v1'; source_sha='${{ github.sha }}'; sha256=$sha; bytes=$bytes; release=$false; actual_windows_client='NOT RUN'; signed=$false } |
-            ConvertTo-Json | Set-Content -LiteralPath (Join-Path $out 'setup-qa-report.json') -Encoding utf8
-      - name: Quiet install into disposable directory and inspect payload
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $setup = (Resolve-Path 'build/windows-setup-qa/LevelUpGames-BeamPatcher-QA-Setup.exe').Path
-          $installed = Join-Path $env:RUNNER_TEMP 'LevelUp Games Beam QA Smoke'
-          $args = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="' + $installed + '"'
-          $process = Start-Process -FilePath $setup -ArgumentList $args -PassThru -Wait
-          if ($process.ExitCode -ne 0) { throw "Installer returned $($process.ExitCode)" }
-          $exe = Join-Path $installed 'beam-patcher.exe'
-          $config = Join-Path $installed 'config.yml'
-          $guide = Join-Path $installed 'README-QA.txt'
-          foreach ($file in @($exe,$config,$guide)) {
-            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing installer payload: $file" }
-          }
-          $content = Get-Content -LiteralPath $config -Raw
-          if (-not $content.Contains('target_grf: "levelup-qa.grf"')) { throw "Safe QA GRF profile not installed" }
-          if (-not $content.Contains('http://127.0.0.1:9/disabled')) { throw "Live patch feed unexpectedly configured" }
-          if (-not $content.Contains('client_exe: "NO_CLIENT_CONFIGURED.exe"')) { throw "QA client launch not disabled" }
-          if (-not $content.Contains('qa_only: true')) { throw "Required QA isolation policy missing" }
-          # Freshly installed launcher must reject unattended patching without
-          # a selected isolated workspace.
-          $headless = Start-Process -FilePath $exe -ArgumentList '--headless' -WorkingDirectory $installed -PassThru -Wait
-          if ($headless.ExitCode -eq 0) { throw "Unconfigured QA startup unexpectedly succeeded" }
-          if (Test-Path (Join-Path $installed 'levelup-qa.grf')) { throw "Unconfigured launcher wrote a GRF" }
-          # Re-running the installer must preserve a user's edited config.
-          Add-Content -LiteralPath $config -Value '# QA_UPGRADE_PRESERVATION_MARKER'
-          $upgrade = Start-Process -FilePath $setup -ArgumentList $args -PassThru -Wait
-          if ($upgrade.ExitCode -ne 0) { throw "QA upgrade returned $($upgrade.ExitCode)" }
-          if (-not (Get-Content -LiteralPath $config -Raw).Contains('# QA_UPGRADE_PRESERVATION_MARKER')) {
-            throw "QA upgrade unexpectedly overwrote local config"
-          }
-          $uninstaller = Join-Path $installed 'unins000.exe'
-          if (-not (Test-Path -LiteralPath $uninstaller)) { throw "Uninstaller missing" }
-          $done = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -PassThru -Wait
-          if ($done.ExitCode -ne 0) { throw "Uninstaller returned $($done.ExitCode)" }
-          Write-Host 'QA_INSTALL_UNINSTALL_OK; no client data was bundled'
-      - name: Upload short-lived unsigned QA setup only
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: levelup-beam-windows-setup-qa-${{ github.sha }}
-          path: |
-            build/windows-setup-qa/LevelUpGames-BeamPatcher-QA-Setup.exe
-            build/windows-setup-qa/setup-qa-report.json
-          retention-days: 7
-          if-no-files-found: error
+          Write-Host 'TURKUAZ-ONLY-001: Windows patch QA passes only core/format tests.'
+          Write-Host 'Only the separately protected TurkuazInstaller primary may be approved for distribution.'
+          Write-Host 'No installer built, uploaded or released by this QA workflow.'

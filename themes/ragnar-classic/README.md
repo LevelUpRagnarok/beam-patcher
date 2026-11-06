@@ -7,7 +7,7 @@ Aciklama: Pixel-region reference only; no legacy binaries, live patches or GRFs
 Bagimli Oldugu Katman: beam-ui/public/index.html | assets/ragnar-classic.css
 -->
 
-# Ragnar Classic — final observed legacy THOR launcher layout
+# Turkuaz Klasik — historical THOR-inspired launcher layout
 
 Status: **DRAFT / VISUAL QA ONLY**, opt-in Beam UI. Screenshot is user-provided
 local launcher view of D:\Ragnarok; the matching executable itself is NOT
@@ -37,7 +37,7 @@ in the GitHub theme sources and has not been used as code.
 
 ## Three independent styles
 
-- `default`: original modern GOATMMO Beam UI, unchanged.
+- `default`: Turkuaz Standart launcher (original Beam layout).
 - `ragnar-legacy`: rose/cream old web palette, unchanged.
 - `ragnar-classic`: screenshot-inspired **layout** and white/dark/teal
   design, close to the last-used legacy THOR launcher.

@@ -5,22 +5,22 @@
 # Aciklama: Varsayilan uzak patch yayini yok; QA GRF ayridir; manuel test bilincli secilir
 # Bagimli Oldugu Katman: beam-core/src/config.rs | installer/windows/BeamPatcher-QA.iss
 app:
-  name: "LevelUp Games Beam QA"
+  name: "Turkuaz Ragnarok Online QA"
   version: "1.0.1"
-  window_title: "LevelUp Games - Beam QA (TEST ONLY)"
+  window_title: "Turkuaz Ragnarok Online - QA (TEST MODU)"
   game_directory: null
   client_exe: "NO_CLIENT_CONFIGURED.exe"
   setup_exe: null
   bgm_autoplay: false
   bgm_file: null
-  server_name: "LEVELUP GAMES (QA)"
+  server_name: "TURKUAZ RAGNAROK ONLINE (QA)"
   video_background_enabled: false
   video_background_file: null
   grid_images:
-    - "assets/1.png"
-    - "assets/2.png"
-    - "assets/3.png"
-    - "assets/4.png"
+    - "assets/turkuaz-user-classic-castle.svg"
+    - "assets/turkuaz-user-adventurers.svg"
+    - "assets/turkuaz-user-poring.svg"
+    - "assets/turkuaz-dungeon.svg"
   limited_items: []
   social_links: []
   discord_url: null

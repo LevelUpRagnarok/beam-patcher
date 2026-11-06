@@ -11,7 +11,7 @@ This directory contains community-contributed themes for Beam Patcher.
 
 ## Available Themes
 
-### Default
+### Turkuaz Standart (`default`)
 Basic theme with minimal customization. Great starting point for creating your own theme.
 
 ### Dark Mode (Coming Soon)
@@ -20,20 +20,20 @@ A sleek dark theme for night patching sessions.
 ### Classic RO (Coming Soon)
 Nostalgic theme inspired by classic Ragnarok Online aesthetics.
 
-## Ragnar Ragnarok Online themes (new, opt-in)
+## Turkuaz Ragnarok Online themes (opt-in)
 
 The client project has **two separate visual choices**, neither activated
 for players by default:
 
-- **Ragnar Legacy:** `ui.theme: ragnar-legacy` — rose/cream recoloring
+- **Turkuaz Nostalji:** `ui.theme: ragnar-legacy` — rose/cream recoloring
   inspired by the older THOR web patcher styles. Guide:
   [`ragnar-legacy/README.md`](ragnar-legacy/README.md).
-- **Ragnar Classic:** `ui.theme: ragnar-classic` — the last-used launcher
+- **Turkuaz Klasik:** `ui.theme: ragnar-classic` — the last-used launcher
   screenshot layout, with three left promo panels, black main news pane,
   two right mini previews, dual rainbow progress styling and round Start.
   Guide: [`ragnar-classic/README.md`](ragnar-classic/README.md).
 
-- **LevelUp Modern:** `ui.theme: levelup-modern` — blue/gold fantasy-inspired
+- **Turkuaz Modern:** `ui.theme: levelup-modern` — blue/gold fantasy-inspired
   launcher styling, plus an in-app appearance selector for all four themes.
   Guide: [`levelup-modern/README.md`](levelup-modern/README.md).
 

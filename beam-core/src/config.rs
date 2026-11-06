@@ -161,7 +161,7 @@ impl Config {
         let mut config: Config = serde_yaml::from_str(&content)?;
         // Older QA setup packages had no qa_only field. Preserve the user's
         // configuration, but never interpret that absence as production mode.
-        if config.app.name == crate::qa_guard::QA_APP_NAME {
+        if crate::qa_guard::is_qa_app_name(&config.app.name) {
             config.patcher.qa_only = true;
         }
         config.validate()?;
@@ -175,9 +175,9 @@ impl Config {
     }
     
     pub fn validate(&self) -> Result<()> {
-        if self.app.name == crate::qa_guard::QA_APP_NAME && !self.patcher.qa_only {
+        if crate::qa_guard::is_qa_app_name(&self.app.name) && !self.patcher.qa_only {
             return Err(Error::InvalidConfig(
-                "LevelUp Games QA profile cannot disable isolation".into()
+                "Turkuaz Ragnarok Online QA profile cannot disable isolation".into()
             ));
         }
         if self.patcher.mirrors.is_empty() {
@@ -203,15 +203,15 @@ impl Config {
     pub fn default() -> Self {
         Config {
             app: AppConfig {
-                name: "Beam Patcher".to_string(),
+                name: "Turkuaz Ragnarok Online".to_string(),
                 version: "1.0.0".to_string(),
-                window_title: "Beam Patcher - Modern RO Patcher".to_string(),
+                window_title: "Turkuaz Ragnarok Online".to_string(),
                 game_directory: None,
                 client_exe: "Ragnarok.exe".to_string(),
                 setup_exe: Some("setup.exe".to_string()),
                 bgm_autoplay: Some(false),
                 bgm_file: None,
-                server_name: Some("MyRO".to_string()),
+                server_name: Some("Turkuaz Ragnarok Online".to_string()),
                 video_background_enabled: Some(false),
                 video_background_file: None,
                 grid_images: None,
@@ -284,9 +284,19 @@ mod qa_config_migration_tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
-    fn legacy_qa_config_is_migrated_in_memory_without_rewriting_user_file() {
+    fn branded_qa_profile_cannot_opt_out_of_isolation() {
         let mut config = Config::default();
         config.app.name = crate::qa_guard::QA_APP_NAME.to_owned();
+        config.patcher.qa_only = false;
+        assert!(config.validate().is_err());
+        config.app.name = crate::qa_guard::LEGACY_QA_APP_NAME.to_owned();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn legacy_qa_config_is_migrated_in_memory_without_rewriting_user_file() {
+        let mut config = Config::default();
+        config.app.name = crate::qa_guard::LEGACY_QA_APP_NAME.to_owned();
         config.app.client_exe = "NO_CLIENT_CONFIGURED.exe".to_owned();
         config.patcher.target_grf = "levelup-qa.grf".to_owned();
         config.patcher.patch_list_url = "http://127.0.0.1:9/disabled/patchlist.txt".into();
