@@ -38,7 +38,7 @@ Beam Patcher is a complete game patching solution designed for Ragnarok Online s
 ### Key Highlights
 
 - **Modern UI**: Web-based interface built with Tauri for native performance
-- **Multi-Format**: Supports GRF (0x101, 0x102, 0x103, 0x200), and custom BEAM format
+- **Multi-Format**: Supports BEAM and a restricted GRF reader/writer profile; see the format limits below
 - **Parallel Downloads**: Multi-threaded downloading with mirror fallback
 - **Customizable**: Fully configurable UI with custom layouts, buttons, news feeds
 - **Cross-Platform**: Windows, Linux, and macOS support
@@ -72,7 +72,7 @@ Core library containing all business logic:
 
 #### **beam-formats**
 File format implementations:
-- **grf**: GRF archive reader/writer (all versions)
+- **grf**: Fail-closed GRF reader/writer (verified 0x101 read and standard 0x200 write paths)
 - **rgz**: RGZ patch format (update soon)
 - **gpf**: GPF patch format (update soon)
 - **beam**: Custom BEAM format with MD5 verification
@@ -91,7 +91,7 @@ Tauri-based desktop application providing:
 ## Features
 
 ### Patching Features
-- ✅ Full GRF support (0x101, 0x102, 0x103, 0x200, (0x201 or 0x300 that is custom encryption grf for future update))
+- ✅ Restricted GRF support: legacy 0x101 read and verified standard 0x200 read/write paths; unsupported encryption states are rejected
 - ✅ Custom BEAM format with built-in MD5 verification
 - ✅ Incremental patching
 - ✅ Resume interrupted downloads
@@ -453,15 +453,11 @@ OPTIONS:
 
 GRF (Game Resource File) is the primary archive format for Ragnarok Online.
 
-**Supported Versions:**
-- 0x101 (Ancient)
-- 0x102 (Early)
-- 0x103 (Common)
-- 0x200 (Modern)
-- 0x201 (custom encryption for future coz need reverse engineering)
-- 0x300 (custom encryption for future coz need reverse engineering)
-
-```
+**Verified support boundary:**
+- Read: legacy 0x101 and standard 0x200 paths with valid UTF-8 filenames.
+- Write: standard 0x200 only.
+- 0x102/0x103 protected or encrypted variants, 0x201/0x300, and encrypted or unknown per-entry flags are not claimed as supported; they fail closed where detected.
+- CP949 filename decoding is not implemented or verified.
 
 **Advantages:**
 - ✅ MD5 verification per file
@@ -626,7 +622,7 @@ beam.verify_all()?;
 
 ## Disclaimer
 
-This patcher is designed for legitimate use with Ragnarok Online private servers. It supports multiple GRF formats including standard formats (0x101-0x200) and custom encryption formats (0x300/Gepard Shield) later for future updates.
+This patcher is intended for authorized Ragnarok Online private-server tooling. GRF compatibility is limited to the verified read/write paths listed above. It does not currently support 0x300/Gepard Shield or claim compatibility with a specific game client.
 
 **Intended Use:**
 - ✅ Private server owners managing game updates
