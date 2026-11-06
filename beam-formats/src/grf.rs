@@ -936,7 +936,10 @@ mod grf_path_encoding_tests {
         let compressed_table = encoder.finish().unwrap();
 
         let mut archive = vec![0u8; GRF_HEADER_SIZE as usize];
+        archive[..15].copy_from_slice(GRF_HEADER);
+        archive[15] = 0;
         archive[38..42].copy_from_slice(&1u32.to_le_bytes());
+        archive[42..46].copy_from_slice(&GRF_VERSION_0X200.to_le_bytes());
         archive.extend_from_slice(&(compressed_table.len() as u32).to_le_bytes());
         archive.extend_from_slice(&(table.len() as u32).to_le_bytes());
         archive.extend_from_slice(&compressed_table);
@@ -946,17 +949,28 @@ mod grf_path_encoding_tests {
     #[test]
     fn rejects_cp949_filename_bytes_instead_of_replacing_them() {
         // CP949 bytes for Hangul '가'; they are not valid UTF-8.
-        let mut archive = archive_with_0x200_filename(&[0xB0, 0xA1]);
-        let result = Grf::read_file_table(
-            &mut std::io::Cursor::new(&mut archive),
-            GRF_VERSION_0X200,
-        );
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "beam-grf-cp949-no-write-{}-{stamp}.grf",
+            std::process::id()
+        ));
+        let archive = archive_with_0x200_filename(&[0xB0, 0xA1]);
+        std::fs::write(&path, &archive).unwrap();
 
+        let result = Grf::open(&path);
         assert!(matches!(
             result,
             Err(Error::Unsupported(message))
                 if message.contains("legacy code-page decoding is not verified")
         ));
+        assert_eq!(std::fs::read(&path).unwrap(), archive);
+        assert!(!path.with_extension("grf.tmp").exists());
+        assert!(!path.with_extension("grf.bak").exists());
+
+        let _ = std::fs::remove_file(path);
     }
 
     #[test]
