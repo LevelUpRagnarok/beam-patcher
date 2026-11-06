@@ -1,13 +1,13 @@
 <!--
 Dosya Yolu: themes/levelup-modern/README.md
-Amac: LevelUp Modern Beam temasi gorunumu, secim akisi ve guvenli QA sinirlari
+Amac: Turkuaz Modern Beam temasi gorunumu, secim akisi ve guvenli QA sinirlari
 Modul - Markdown Theme Documentation
 Version: 0.2.1-candidate
 Aciklama: Bagimsiz secilebilir gorunume dair kaynak ve browser kontrol rehberi
 Bagimli Oldugu Katman: beam-ui/public/index.html | assets/levelup-modern.css
 -->
 
-# LevelUp Modern - selectable launcher theme
+# Turkuaz Modern - selectable launcher theme
 
 **Status:** DRAFT / offline visual QA; no production 2022 patch feed, game launch,
 GRF installation, DATA.INI modification, installer or release approval.
@@ -19,10 +19,10 @@ GRF installation, DATA.INI modification, installer or release approval.
 | `default` | Original Beam appearance |
 | `ragnar-legacy` | 2015 THOR-inspired cream/rose |
 | `ragnar-classic` | White/dark screenshot-referenced layout |
-| `levelup-modern` | Blue/gold LevelUp Games fantasy-inspired layout |
+| `levelup-modern` | Blue/gold Turkuaz Ragnarok Online layout |
 
 `levelup-modern` is a responsive CSS interpretation of the previously
-approved LevelUp Games mockup. It includes a castle-silhouette hero banner,
+previously approved LevelUp Games concept (historical source). It includes a castle-silhouette hero banner,
 three activity tiles, an existing live news container, a patch progress bar
 and original Play/pause/setup event handlers. The mockup's literal screenshot
 is **not** used as a clickable background (its labels, player counts and progress

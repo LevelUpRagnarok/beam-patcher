@@ -1,0 +1,523 @@
+/*
+Dosya Yolu: REPO_ROOT/beam-ui/public/assets/turkuaz-premium.css
+Amac: Turkuaz Ragnarok Online dort tema icin kaynak tabanli gorsel kalite katmani
+Modul - CSS opt-in display layer
+Version: 1.0.0-candidate
+Aciklama: Ozgun yerel SVG; gorunur durum verisi uydurmaz, oyun/patch isleyicilerine dokunmaz
+Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-*.svg | mevcut tema CSS
+*/
+
+/* Shared tactile surfaces: preserve DOM, patch buttons and theme preference IDs. */
+.patcher-container {
+    position: relative;
+    isolation: isolate;
+    background-image: radial-gradient(ellipse at 50% -20%, rgba(129,187,247,.075), transparent 60%);
+}
+.patcher-container::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, #e9cc8c 26%, #79cdf1 51%, #e9cc8c 74%, transparent);
+    opacity: .85;
+}
+.header { z-index: 2; }
+.header .logo-container { gap: 10px; }
+.header .logo-icon {
+    flex: none;
+    filter: drop-shadow(0 2px 7px rgba(253,205,137,.28));
+}
+.header .logo-text {
+    font-size: 12px;
+    letter-spacing: .9px;
+    white-space: nowrap;
+    line-height: 1.25;
+}
+.window-btn:focus-visible,
+.filter-btn:focus-visible,
+.btn-play-now:focus-visible,
+.btn-action-small:focus-visible,
+.btn-register:focus-visible,
+.modern-nav button:focus-visible,
+.grid-image-item:focus-visible {
+    outline: 2px solid #f2c77b;
+    outline-offset: 2px;
+}
+.grid-image-item {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.grid-image-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .28s ease, filter .28s ease;
+}
+.grid-image-item:hover img { transform: scale(1.035); }
+.news-item { transition-duration: .2s; }
+.news-item:hover { transform: translateY(-1px); }
+.btn-play-now { transition-duration: .2s; }
+.btn-play-now:disabled { transform: none !important; box-shadow: none !important; }
+.progress-section { min-width: 0; }
+.progress-label { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+    .grid-image-item img, .news-item, .btn-play-now { transition: none !important; }
+    .news-item:hover, .grid-image-item:hover img { transform: none !important; }
+}
+
+/* 01 — Turkuaz Standart: restrained midnight-blue, readable news and four real scenes. */
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) {
+    --blue: #52a9ef;
+    --blue2: #1c70b7;
+    --blue-glow: rgba(62,159,245,.32);
+    --border: rgba(144,182,220,.19);
+    background: radial-gradient(ellipse at 85% -3%, #233b69 0%, transparent 50%), #0b1428;
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .header {
+    height: 48px;
+    background: linear-gradient(100deg, #101b32 0%, #112243 65%, #0e1b34);
+    border-bottom: 1px solid rgba(220,183,118,.32);
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .content-panel {
+    background: linear-gradient(145deg, rgba(25,44,73,.78), rgba(9,18,36,.9));
+    border: 1px solid rgba(171,198,232,.22);
+    border-radius: 18px;
+    box-shadow: 0 24px 48px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.07);
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .news-section-main {
+    background: linear-gradient(160deg, #112342e8, #0b1932e8);
+    border: 1px solid rgba(146,186,228,.18);
+    border-radius: 13px;
+    padding: 13px;
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .filter-btn.active {
+    background: linear-gradient(135deg, #276fb3, #19467d);
+    border-color: #67a8dc;
+    box-shadow: 0 3px 15px #0d4b8359;
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .news-item {
+    background: linear-gradient(105deg, rgba(34,61,103,.66), rgba(20,39,72,.56));
+    border-color: rgba(157,193,229,.18);
+    border-left: 2px solid #d6b57b;
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .image-grid { gap: 10px; }
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .grid-image-item {
+    border-radius: 13px;
+    border: 1px solid rgba(214,190,136,.5);
+    box-shadow: 0 8px 18px rgba(1,7,21,.25);
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .grid-image-item::after {
+    content: 'TURKUAZ RO';
+    position: absolute;
+    inset: auto 0 0;
+    padding: 20px 11px 9px;
+    background: linear-gradient(transparent, rgba(6,19,43,.95));
+    color: #fff5dc;
+    font: 800 11px/1.3 'Inter',sans-serif;
+    letter-spacing: 1px;
+    pointer-events: none;
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .grid-image-item:nth-child(2)::after { content: 'MACERACI LONCASI'; }
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .grid-image-item:nth-child(3)::after { content: 'PORING DÜNYASI'; }
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .grid-image-item:nth-child(4)::after { content: 'ZİNDAN KEŞFİ'; }
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .progress-section {
+    background: rgba(13,29,54,.66);
+    border: 1px solid rgba(173,201,234,.14);
+    border-radius: 13px;
+    padding: 12px;
+}
+body:not(.theme-ragnar-legacy):not(.theme-ragnar-classic):not(.theme-levelup-modern) .btn-play-now {
+    border: 1px solid #98c9ef;
+    background: linear-gradient(#3bb2f7, #1358ba);
+    box-shadow: 0 7px 20px #0c66ce45, inset 0 1px 0 #fff7;
+    letter-spacing: 1.5px;
+}
+
+/* 02 — Turkuaz Modern: castle painting, navy velvet and gilded controls. */
+body.theme-levelup-modern {
+    --blue: #3ea8ef;
+    --blue-glow: rgba(42,134,242,.32);
+    background: radial-gradient(circle at 50% 0, #234b78, transparent 45%), #071226;
+}
+body.theme-levelup-modern .header {
+    height: 57px;
+    background: linear-gradient(90deg, #08192f, #112748 55%, #091b36);
+    box-shadow: inset 0 -1px 0 #eac7814d, 0 8px 27px #03091450;
+}
+body.theme-levelup-modern .logo-text {
+    font-size: 12px;
+    letter-spacing: 1.1px;
+    background: linear-gradient(#fff7d7,#e2b86d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+body.theme-levelup-modern .modern-nav button {
+    font-size: 11px;
+    border-radius: 7px;
+    padding: 9px 13px;
+    color: #e1ecfb;
+}
+body.theme-levelup-modern .modern-nav button:first-child {
+    background: linear-gradient(90deg, #193a71, #1b4e92);
+    border: 1px solid #6d9ace60;
+    box-shadow: inset 0 1px #fff2;
+}
+body.theme-levelup-modern .main-content { padding: 10px 13px 12px; }
+body.theme-levelup-modern .top-grid { gap: 11px; height: 365px; }
+body.theme-levelup-modern .modern-hero {
+    background:
+        linear-gradient(90deg, rgba(2,15,43,.87), rgba(5,26,60,.47) 52%, rgba(10,34,61,.02)),
+        url('turkuaz-castle.svg') center 43% / cover no-repeat;
+    border: 1px solid #f5d2978f;
+    box-shadow: 0 12px 30px #010b2070, inset 0 0 0 3px #ffffff12;
+    border-radius: 12px;
+}
+body.theme-levelup-modern .modern-hero::before {
+    inset: 10px;
+    width: auto;
+    height: auto;
+    right: 10px;
+    bottom: 10px;
+    opacity: 1;
+    background: none;
+    clip-path: none;
+    border: 1px solid #fff6ce50;
+    border-radius: 6px;
+    pointer-events: none;
+}
+body.theme-levelup-modern .modern-hero::after {
+    background: linear-gradient(90deg, #08172c83, transparent 80%);
+}
+body.theme-levelup-modern .modern-hero-content {
+    padding: 24px 30px;
+    max-width: 77%;
+}
+body.theme-levelup-modern .modern-hero-eyebrow {
+    display: inline-block;
+    padding: 5px 10px;
+    background: rgba(7,24,52,.64);
+    border: 1px solid #edd0a35e;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 1.55px;
+}
+body.theme-levelup-modern .modern-hero h1 {
+    font-size: 41px;
+    line-height: .98;
+    letter-spacing: 1.5px;
+    color: #fff3d4;
+    text-shadow: 0 3px 13px #09112a, 0 0 35px #1a2f5d;
+}
+body.theme-levelup-modern .modern-hero p {
+    display: inline-block;
+    margin-top: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(253,216,152,.7);
+    color: #fff7ec;
+    font-weight: 600;
+    font-size: 12px;
+}
+body.theme-levelup-modern .news-section-main {
+    border: 1px solid #789cbe68;
+    background: linear-gradient(180deg,#102947ef,#071b35f7);
+    box-shadow: 0 12px 30px #0007, inset 0 1px #fff2;
+}
+body.theme-levelup-modern .news-section-main::before {
+    color: #f6d29a;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid #d9bd8450;
+    margin-bottom: 8px;
+}
+body.theme-levelup-modern .news-item {
+    background: linear-gradient(100deg, rgba(47,88,132,.45), rgba(16,43,83,.7));
+    border: 1px solid rgba(136,176,220,.23);
+    border-left: 2px solid #d4ae72;
+    border-radius: 7px;
+    min-height: 49px;
+}
+body.theme-levelup-modern .news-title { color: #e8f1fc; font-weight: 700; }
+body.theme-levelup-modern .filter-btn.active {
+    background: linear-gradient(140deg, #285c9c, #153768);
+    border-color: #79b4f0;
+}
+body.theme-levelup-modern .grid-image-item {
+    border: 1px solid rgba(242,202,134,.6);
+    box-shadow: 0 8px 15px #0006;
+    background: #19365b;
+}
+body.theme-levelup-modern .grid-image-item img { opacity: 1; filter: saturate(1.12) contrast(1.05); }
+body.theme-levelup-modern .grid-image-item::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 35% 0 0;
+    background: linear-gradient(transparent, rgba(8,14,39,.89));
+    pointer-events: none;
+    border: 0;
+    border-radius: 0;
+}
+body.theme-levelup-modern .grid-image-item::after {
+    z-index: 2;
+    bottom: 12px;
+    color: #fff9e8;
+    text-shadow: 0 2px 12px #061129;
+}
+body.theme-levelup-modern .grid-image-item:nth-child(1)::after { content: 'KRALLIĞI KEŞFET'; }
+body.theme-levelup-modern .grid-image-item:nth-child(2)::after { content: 'SINIFINI SEÇ'; }
+body.theme-levelup-modern .grid-image-item:nth-child(3)::after { content: 'PORING DÜNYASI'; }
+body.theme-levelup-modern .bottom-section { padding-top: 11px; }
+body.theme-levelup-modern .progress-section,
+body.theme-levelup-modern .server-status-image-container {
+    background: linear-gradient(160deg, #10294b, #0b1b35);
+    border: 1px solid #7698c063;
+    box-shadow: inset 0 1px 0 #fff2,0 5px 16px #0003;
+}
+body.theme-levelup-modern .progress-bar-container {
+    height: 10px;
+    box-shadow: inset 0 2px 3px #0008;
+}
+body.theme-levelup-modern .btn-play-now {
+    height: 43px;
+    min-width: 143px;
+    border: 2px solid #edc988;
+    border-radius: 14px 4px 14px 4px;
+    background: linear-gradient(160deg, #38b5fc, #1a70d3 50%, #114384);
+    box-shadow: inset 0 1px #ffffff88, inset 0 -3px #092d6a, 0 5px 19px #177bd755;
+    font: 700 17px Georgia,serif;
+    text-shadow: 0 1px 6px #09386a;
+}
+body.theme-levelup-modern .btn-play-now:hover:not(:disabled) {
+    transform: translateY(-2px);
+    background: linear-gradient(#65ccfc,#247ada 70%,#1251a4);
+}
+body.theme-levelup-modern .btn-action-small { border: 1px solid #799fcb80; }
+
+/* 03 — Turkuaz Klasik: parchment window, painted central pane and enamel hardware. */
+body.theme-ragnar-classic {
+    background: #ebf1f8;
+    --blue: #198fbb;
+}
+body.theme-ragnar-classic .header {
+    height: 40px;
+    background: linear-gradient(90deg, #fffefa, #e5f0f7);
+    border-bottom: 1px solid #b6c9d8;
+    box-shadow: 0 3px 14px #2c54751c;
+}
+body.theme-ragnar-classic .logo-text {
+    font: 800 12px/1.25 Georgia, serif;
+    color: #305178;
+    -webkit-text-fill-color: #305178;
+    letter-spacing: .9px;
+}
+body.theme-ragnar-classic .main-content { padding: 9px 13px; }
+body.theme-ragnar-classic .content-panel { background: transparent; gap: 10px; }
+body.theme-ragnar-classic .top-grid { gap: 10px; grid-template-columns: 148px minmax(0,1fr) 142px; }
+body.theme-ragnar-classic .classic-ad-card {
+    border: 1px solid #c4d3de;
+    border-radius: 9px;
+    box-shadow: inset 0 1px #fff9, 0 5px 12px #152c4433;
+    background-size: cover;
+    background-position: center;
+    justify-content: flex-end;
+    padding-bottom: 14px;
+    color: #fff;
+    text-shadow: 0 2px 10px #08132e;
+}
+body.theme-ragnar-classic .classic-ad-card::after {
+    inset: 30% 0 0;
+    height: auto;
+    transform: none;
+    border-radius: 0;
+    background: linear-gradient(transparent, rgba(5,20,42,.9));
+}
+body.theme-ragnar-classic .classic-ad-card--care {
+    background-image: linear-gradient(0deg,#1a316f52,#245bba12),url('turkuaz-castle.svg');
+}
+body.theme-ragnar-classic .classic-ad-card--life {
+    background-image: linear-gradient(0deg,#51235244,#e8aed012),url('turkuaz-poring.svg');
+}
+body.theme-ragnar-classic .classic-ad-card--clicker {
+    background-image: linear-gradient(0deg,#25174788,#512b7312),url('turkuaz-dungeon.svg');
+}
+body.theme-ragnar-classic .classic-ad-card span { font-size: 16px; letter-spacing: 1px; }
+body.theme-ragnar-classic .classic-ad-card small { font-size: 9px; color: #fdf1cf; }
+body.theme-ragnar-classic .news-section-main {
+    background:
+        linear-gradient(to bottom, rgba(10,22,44,.48), rgba(8,18,36,.2) 62%, rgba(7,16,31,.79)),
+        url('turkuaz-castle.svg') center / cover;
+    border: 1px solid #b7a68a;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 4px #ffffff21,0 8px 22px #16365435;
+}
+body.theme-ragnar-classic .news-filter-buttons {
+    padding: 9px 10px 0;
+    gap: 5px;
+}
+body.theme-ragnar-classic .filter-btn {
+    border: 1px solid #b7c7d3;
+    border-radius: 6px;
+    background: rgba(10,27,57,.65);
+    color: #f1f5fb;
+    font-weight: 700;
+    backdrop-filter: blur(5px);
+}
+body.theme-ragnar-classic .filter-btn.active {
+    background: linear-gradient(#23789f,#135077);
+    border-color: #d9bb7a;
+    color: #fff;
+    box-shadow: inset 0 -2px #e2ba78;
+}
+body.theme-ragnar-classic .news-cards-wrapper { padding: 9px 11px; }
+body.theme-ragnar-classic .news-item {
+    background: rgba(7,21,39,.77);
+    border: 1px solid rgba(236,217,175,.34);
+    border-radius: 7px;
+    margin-bottom: 3px;
+    backdrop-filter: blur(6px);
+}
+body.theme-ragnar-classic .news-item:hover { background: #173c61c9; border-color: #e0bc84; }
+body.theme-ragnar-classic .news-title { font: 700 13px/1.25 'Inter',sans-serif; color: #fff4df; }
+body.theme-ragnar-classic .news-badge {
+    background: #eac686;
+    color: #263a54;
+    border-radius: 4px;
+    font-weight: 800;
+}
+body.theme-ragnar-classic .image-grid-section { padding: 0; }
+body.theme-ragnar-classic .image-grid { gap: 10px; }
+body.theme-ragnar-classic .grid-image-item {
+    border: 1px solid #b1c4d7;
+    border-radius: 9px;
+    background: #314a6c;
+    box-shadow: 0 5px 14px #1e3e5b36;
+}
+body.theme-ragnar-classic .grid-image-item::after {
+    content: 'DÜNYAYI KEŞFET';
+    position: absolute;
+    inset: auto 0 0;
+    background: linear-gradient(transparent,#071b32d9);
+    padding: 24px 7px 8px;
+    color: #fff8e7;
+    font: 800 10px 'Inter',sans-serif;
+    pointer-events: none;
+    text-align: center;
+}
+body.theme-ragnar-classic .grid-image-item:nth-child(2)::after { content: 'MACERAYA KATIL'; }
+body.theme-ragnar-classic .bottom-section { flex-basis: 119px; height: 119px; }
+body.theme-ragnar-classic .progress-section {
+    background: linear-gradient(#f7f9fc,#e8f1f7);
+    border: 1px solid #bed0df;
+    border-radius: 10px;
+    grid-template-columns: 148px minmax(0,1fr) 142px;
+    box-shadow: inset 0 1px #fff,0 5px 15px #2047631a;
+    padding: 0 9px;
+}
+body.theme-ragnar-classic .progress-bar-container {
+    border-color: #8eacc2;
+    background: #e6eef5;
+    border-radius: 6px;
+    overflow: hidden;
+}
+body.theme-ragnar-classic .progress-bar {
+    background: linear-gradient(90deg,#50b6e6,#899df0,#edbc96);
+}
+body.theme-ragnar-classic .progress-label { color: #39516a; padding-top: 2px; }
+body.theme-ragnar-classic .btn-play-now {
+    width: 87px; height: 87px; min-width: 87px;
+    border: 4px solid #e6c287;
+    background: radial-gradient(circle at 33% 17%, #80cfff, #267dc0 48%, #0c4078 77%, #092448);
+    color: #fffbe9;
+    box-shadow: inset 0 0 0 2px #b3e2ff8a,0 0 0 3px #9d7850,0 7px 18px #18345455;
+    text-shadow: 0 2px 5px #04172c;
+    font: 800 15px Georgia,serif;
+}
+body.theme-ragnar-classic .btn-play-now:hover:not(:disabled) {
+    background: radial-gradient(circle at 30% 18%,#b8e9ff,#409adc 55%,#134e8e);
+}
+
+/* 04 — Turkuaz Nostalji: rose parchment, warmer news cards, painted thumbnails. */
+body.theme-ragnar-legacy {
+    background: radial-gradient(ellipse at 22% -15%, #ffe4cd, transparent 60%),
+        linear-gradient(135deg, #f4dae3, #faeadb 55%, #e9c4d4);
+}
+body.theme-ragnar-legacy .header {
+    height: 46px;
+    border-bottom: 1px solid #b9738d;
+    background: linear-gradient(#fffaf0, #f1d4dc);
+    box-shadow: 0 3px 15px #834b6d30;
+}
+body.theme-ragnar-legacy .logo-text {
+    font-size: 13px;
+    color: #854c63;
+    -webkit-text-fill-color: #854c63;
+}
+body.theme-ragnar-legacy .content-panel {
+    background: linear-gradient(140deg, #fffaf0f5, #fff5eee6);
+    border: 1px solid #bd8e9d;
+    box-shadow: 0 20px 35px #713c5736, inset 0 0 0 3px #fff5e4;
+    border-radius: 15px;
+}
+body.theme-ragnar-legacy .news-section-main {
+    border: 1px solid #d8a9b9;
+    background:
+        linear-gradient(145deg, #fffdf8e8, #fff2e8e3),
+        url('turkuaz-poring.svg') center / cover;
+    border-radius: 11px;
+    box-shadow: 0 6px 17px #965d721f;
+}
+body.theme-ragnar-legacy .news-item {
+    border-left: 3px solid #bb7494;
+    background: linear-gradient(90deg,#fffaf2,#fae9e9);
+    box-shadow: 0 3px 9px #99587512;
+}
+body.theme-ragnar-legacy .news-title { color: #774362; }
+body.theme-ragnar-legacy .grid-image-item {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #d7a2b0;
+    box-shadow: 0 6px 17px #894a693b;
+}
+body.theme-ragnar-legacy .grid-image-item::after {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 20px 10px 8px;
+    background: linear-gradient(transparent, #593548b8);
+    color: #fff6e8;
+    font: 800 11px 'Inter',sans-serif;
+    text-shadow: 0 2px 5px #583148;
+    pointer-events: none;
+    content: 'TURKUAZ MACERASI';
+}
+body.theme-ragnar-legacy .grid-image-item:nth-child(2)::after { content: 'MACERACI LONCASI'; }
+body.theme-ragnar-legacy .grid-image-item:nth-child(3)::after { content: 'SEVİMLİ PORING'; }
+body.theme-ragnar-legacy .grid-image-item:nth-child(4)::after { content: 'ZİNDAN YOLCULUĞU'; }
+body.theme-ragnar-legacy .progress-section {
+    background: linear-gradient(145deg,#fff9f2,#fce8e9);
+    border-color: #d9a7b4;
+    box-shadow: inset 0 1px #fff, 0 3px 9px #9a577226;
+}
+body.theme-ragnar-legacy .progress-bar {
+    background: linear-gradient(90deg, #a65682, #da8ba0, #eab07e);
+}
+body.theme-ragnar-legacy .btn-play-now {
+    border: 2px solid #edc99c;
+    border-radius: 12px 4px 12px 4px;
+    background: linear-gradient(145deg,#d884a4,#93496d);
+    box-shadow: inset 0 1px #fff9,0 5px 18px #a9547944;
+}
+
+/* Fixed 900x620 client: avoid overlaps if hosted narrower than target size. */
+@media (max-width: 760px) {
+    body.theme-levelup-modern .top-grid { grid-template-columns: minmax(0,1.2fr) minmax(200px,.9fr); }
+    body.theme-levelup-modern .modern-hero-content { padding: 16px; max-width: 88%; }
+    body.theme-levelup-modern .modern-hero h1 { font-size: 28px; }
+    body.theme-levelup-modern .btn-play-now { min-width: 110px; font-size: 14px; }
+    body.theme-ragnar-classic .top-grid { grid-template-columns: 108px minmax(0,1fr) 98px; gap: 5px; }
+    body.theme-ragnar-classic .progress-section { grid-template-columns: 108px minmax(0,1fr) 98px; gap: 0 5px; }
+}

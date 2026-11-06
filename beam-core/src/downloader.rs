@@ -184,34 +184,52 @@ impl Downloader {
     }
     
     fn parse_patch_list(&self, content: &str) -> Result<Vec<PatchInfo>> {
+        // SECURITY: untrusted patch feed names must never become paths. For
+        // verified profiles an SHA256 is mandatory, never silently optional.
+        const MAX_PATCHES: usize = 4096;
         let mut patches = Vec::new();
-        
+        let mut seen = HashSet::new();
+
         for line in content.lines() {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
-            
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.is_empty() {
-                continue;
+            if !(1..=3).contains(&parts.len()) || patches.len() >= MAX_PATCHES {
+                return Err(Error::DownloadFailed("Invalid patch manifest structure".to_string()));
             }
-            
-            let filename = parts[0].to_string();
-            let checksum = if parts.len() > 1 {
-                Some(parts[1].to_string())
-            } else {
-                None
+
+            let filename = parts[0];
+            let extension = Path::new(filename)
+                .extension().and_then(|s| s.to_str())
+                .unwrap_or("").to_ascii_lowercase();
+            if !crate::patch_guard::safe_basename(filename)
+                || !matches!(extension.as_str(), "beam" | "thor" | "rgz" | "gpf")
+                || !seen.insert(filename.to_ascii_lowercase())
+            {
+                return Err(Error::DownloadFailed(format!(
+                    "Unsafe, duplicated or unsupported patch filename: {}", filename
+                )));
+            }
+
+            let checksum = match parts.get(1) {
+                Some(value) if value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit()) =>
+                    Some((*value).to_string()),
+                Some(_) => return Err(Error::DownloadFailed(
+                    format!("Invalid SHA256 for {}", filename))),
+                None if self.config.patcher.verify_checksums => return Err(Error::DownloadFailed(
+                    format!("Missing required SHA256 for {}", filename))),
+                None => None,
             };
-            let size = if parts.len() > 2 {
-                parts[2].parse::<u64>().ok()
-            } else {
-                None
+            let size = match parts.get(2) {
+                Some(value) => Some(value.parse::<u64>().map_err(|_| Error::DownloadFailed(
+                    format!("Invalid patch size for {}", filename)))?),
+                None => None,
             };
-            
-            patches.push(PatchInfo { filename, checksum, size });
+            patches.push(PatchInfo { filename: filename.to_string(), checksum, size });
         }
-        
+
         Ok(patches)
     }
     
@@ -328,6 +346,30 @@ fn tmp_path_for(destination: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_unsafe_and_unverified_patch_manifests() {
+        let mut config = Config::default();
+        config.patcher.verify_checksums = true;
+        let downloader = Downloader::new(config).unwrap();
+        let good = format!("first.beam {} 8\n", "a".repeat(64));
+        assert_eq!(downloader.parse_patch_list(&good).unwrap().len(), 1);
+
+        for bad in [
+            "../escape.beam".to_string(),
+            "..\\escape.beam".to_string(),
+            ".hidden.beam".to_string(),
+            "bad/escape.beam".to_string(),
+            "wrong.exe".to_string(),
+        ] {
+            assert!(downloader.parse_patch_list(&format!("{} {}\n", bad, "a".repeat(64))).is_err());
+        }
+        assert!(downloader.parse_patch_list("missing.beam\n").is_err());
+        assert!(downloader.parse_patch_list("invalid.beam short\n").is_err());
+        assert!(downloader.parse_patch_list(&format!(
+            "FIRST.beam {}\nfirst.beam {}\n", "a".repeat(64), "b".repeat(64)
+        )).is_err());
+    }
 
     #[test]
     fn tmp_path_appends_part_extension() {

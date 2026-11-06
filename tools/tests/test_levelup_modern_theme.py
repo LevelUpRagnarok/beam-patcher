@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Dosya Yolu: tools/tests/test_levelup_modern_theme.py
-# Amac: LevelUp Modern tema degistirme ve offline QA guvenlik kontratini dogrular
+# Amac: Turkuaz Modern gorunumu ve offline QA guvenlik kontratini dogrular
 # Modul - Python unittest / Node source behavior QA
 # Version: 0.3.1-candidate
 # Aciklama: CSS tema scope, browser-only preview, local preference ve native setup sinirlari
@@ -53,7 +53,11 @@ class LevelupModernThemeTests(unittest.TestCase):
         self.assertIn("Offline theme preview - no patches or game launches", HTML)
         self.assertIn("if (previewModern) return [", HTML)
         self.assertIn("url: 'about:blank'", HTML)
-        self.assertIn("if (isThemePreview || (activeLauncherTheme === 'levelup-modern'", HTML)
+        self.assertIn("const builtInGridImages = Object.freeze([", HTML)
+        self.assertIn("img.src = new URL(imagePath, document.baseURI).href;", HTML)
+        self.assertIn("img.onerror = null;", HTML)
+        self.assertIn("tile?.classList.add('is-image-missing')", HTML)
+        self.assertNotIn("https://via.placeholder.com", HTML)
 
     def test_styles_are_scoped_and_have_no_external_asset_requests(self):
         self.assertIn("body.theme-levelup-modern .modern-hero", CSS)

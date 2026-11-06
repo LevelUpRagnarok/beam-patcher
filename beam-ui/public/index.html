@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoatMMO Patcher</title>
+    <title>Turkuaz Ragnarok Online</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1159,11 +1159,25 @@
         .theme-settings-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
         .theme-settings-status { font-size: 12px; color: #9ce4dc; min-height: 18px; margin-top: 10px; }
         .theme-settings-close { flex-shrink: 0; }
+
+        /* Image loading is fail-closed: never display broken-image icons. */
+        .grid-image-item.is-image-missing { position: relative; }
+        .grid-image-item.is-image-missing::before {
+            content: 'TURKUAZ RO';
+            position: absolute; z-index: 1; left: 10px; top: 10px;
+            color: #dcecff; font-size: 11px; font-weight: 800;
+            letter-spacing: 1px; text-shadow: 0 2px 8px #09152c;
+        }
+        .grid-image-item.is-image-missing img { display: none !important; }
     </style>
     <!-- Explicit opt-in only: preserves the existing Beam appearance by default. -->
     <link id="ragnar-legacy-theme-css" rel="stylesheet" href="assets/ragnar-legacy.css" disabled>
     <link id="ragnar-classic-theme-css" rel="stylesheet" href="assets/ragnar-classic.css" disabled>
     <link id="levelup-modern-theme-css" rel="stylesheet" href="assets/levelup-modern.css" disabled>
+    <!-- Shared visual finishing layer; theme IDs and native actions are unchanged. -->
+    <link rel="stylesheet" href="assets/turkuaz-premium.css">
+    <!-- Reference restoration layer: scoped to Turkuaz Klasik / Modern visual themes. -->
+    <link rel="stylesheet" href="assets/turkuaz-reference-restore.css">
 </head>
 <body>
     <video id="video-background" autoplay loop muted playsinline></video>
@@ -1181,7 +1195,7 @@
                         <circle cx="6" cy="4" r="1.5" fill="#f59e0b"/>
                         <circle cx="18" cy="4" r="1.5" fill="#f59e0b"/>
                     </svg>
-                    <span class="logo-text" id="logo-text">GOATMMO</span>
+                    <span class="logo-text" id="logo-text">TURKUAZ RAGNAROK ONLINE</span>
                 </div>
             </div>
             <nav class="modern-nav" aria-label="Launcher navigation">
@@ -1199,47 +1213,50 @@
             </div>
         </div>
 
+        <!-- The artwork comes from the supplied reference screenshot. Native controls stay real. -->
+        <div class="turkuaz-reference-banner" role="img" aria-label="Ragnarok Online klasik başlatıcı: karakterler, kale ve Poring illüstrasyonu"></div>
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="content-panel">
                 <!-- Top Grid -->
                 <div class="top-grid">
-                    <!-- CSS-only LevelUp Modern hero; no third-party or fake in-game artwork. -->
-                    <section class="modern-hero" aria-label="LevelUp Games">
+                    <!-- CSS-only Turkuaz Modern hero; no third-party or fake in-game artwork. -->
+                    <section class="modern-hero" aria-label="Turkuaz Ragnarok Online">
                         <div class="modern-hero-content">
-                            <span class="modern-hero-eyebrow">LEVELUP GAMES · CLASSIC</span>
+                            <span class="modern-hero-eyebrow">TURKUAZ · RAGNAROK ONLINE</span>
                             <h1>RAGNAROK<br>ONLINE</h1>
                             <p>Yeni bir macera seni bekliyor.</p>
                         </div>
                     </section>
-                    <!-- Visible only in the screenshot-inspired Ragnar Classic theme. -->
+                    <!-- Visible only in the screenshot-inspired classic theme. -->
                     <aside class="classic-ad-rail" aria-label="Classic Ragnar highlights">
                         <div class="classic-ad-card classic-ad-card--care">
-                            <span>RAGNAR ONLINE</span><small>CLASSIC ADVENTURE</small>
+                            <span>TURKUAZ RO</span><small>KLASİK MACERA</small>
                         </div>
                         <div class="classic-ad-card classic-ad-card--life">
-                            <span>EXTRA LIFE</span><small>EVENTS &amp; REWARDS</small>
+                            <span>PORING</span><small>RENKLİ DÜNYA</small>
                         </div>
                         <div class="classic-ad-card classic-ad-card--clicker">
-                            <span>OVERLOOK</span><small>DUNGEON UPDATE</small>
+                            <span>OVERLOOK</span><small>ZİNDAN GÜNCELLEMESİ</small>
                         </div>
                     </aside>
                     <!-- Left: News Section -->
                     <div class="news-section-main">
                         <div class="news-filter-buttons">
                             <button class="filter-btn active" onclick="filterNews('event')">
-                                <i class="ph ph-calendar-blank"></i> Event
+                                <i class="ph ph-calendar-blank"></i> Etkinlik
                             </button>
                             <button class="filter-btn" onclick="filterNews('promo')">
-                                <i class="ph ph-gift"></i> Promo
+                                <i class="ph ph-gift"></i> Kampanya
                             </button>
                             <button class="filter-btn" onclick="filterNews('update')">
-                                <i class="ph ph-megaphone"></i> Update
+                                <i class="ph ph-megaphone"></i> Güncelleme
                             </button>
                         </div>
                         <div class="news-cards-wrapper">
                             <div class="news-cards-container" id="news-cards">
-                                <div class="loading">Loading news...</div>
+                                <div class="loading">Haberler yükleniyor...</div>
                             </div>
                         </div>
                     </div>
@@ -1248,16 +1265,16 @@
                     <div class="image-grid-section">
                         <div class="image-grid" id="image-grid">
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-1').src)">
-                                <img src="" alt="Image 1" id="grid-img-1" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok kale manzarası" id="grid-img-1" oncontextmenu="return false">
                             </div>
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-2').src)">
-                                <img src="" alt="Image 2" id="grid-img-2" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok maceracı loncası" id="grid-img-2" oncontextmenu="return false">
                             </div>
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-3').src)">
-                                <img src="" alt="Image 3" id="grid-img-3" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok Poring ve doğa" id="grid-img-3" oncontextmenu="return false">
                             </div>
                             <div class="grid-image-item" onclick="openImageModal(document.getElementById('grid-img-4').src)">
-                                <img src="" alt="Image 4" id="grid-img-4" oncontextmenu="return false">
+                                <img src="" alt="Turkuaz Ragnarok zindan manzarası" id="grid-img-4" oncontextmenu="return false">
                             </div>
                         </div>
                     </div>
@@ -1270,19 +1287,19 @@
                         <img src="" alt="Server Status" id="status-image" class="status-image" oncontextmenu="return false" style="display: none;">
                         <div class="status-placeholder" id="status-placeholder">
                             <i class="ph ph-image"></i>
-                            <span>Server Status</span>
+                            <span>Sunucu Durumu</span>
                         </div>
                     </div>
 
                     <!-- Progress & Buttons -->
                     <div class="progress-section">
-                        <div class="progress-label" id="progress-label">Ready to patch… 0% (0 MB / 0 GB)</div>
+                        <div class="progress-label" id="progress-label">Güncelleme hazır… 0% (0 MB / 0 GB)</div>
                         <div class="progress-bar-container">
                             <div class="progress-bar" id="progress-bar"></div>
                         </div>
                         <div class="button-row">
                             <button class="btn-play-now" id="play-button" onclick="handlePlayButton()">Play Now</button>
-                            <button class="btn-register" id="register-btn-main" title="Register">Register</button>
+                            <button class="btn-register" id="register-btn-main" title="Kayıt Ol">Kayıt Ol</button>
                             <button class="btn-action-small" id="theme-settings-open" onclick="openThemeSettings()" title="Görünüm ve oyun ayarları" aria-label="Görünüm ve oyun ayarları"><i class="ph ph-gear"></i></button>
                             <button class="btn-action-small" onclick="manualPatch()" title="Manual Patch"><i class="ph ph-folder-open"></i></button>
                             <button class="btn-action-small" onclick="resetCache()" title="Reset Cache"><i class="ph ph-arrow-clockwise"></i></button>
@@ -1310,20 +1327,21 @@
             <p class="theme-settings-description">Temayı anında değiştir. Tercihin yalnızca bu cihazın launcher görünümüne uygulanır; oyun ve güncelleme dosyalarını değiştirmez.</p>
             <label id="theme-choice-gallery-label">Görünümü seç</label>
             <div class="theme-gallery" role="group" aria-labelledby="theme-choice-gallery-label">
-                <button type="button" class="theme-choice" data-launcher-theme="default" aria-pressed="false" onclick="chooseLauncherTheme('default')"><span class="theme-choice-preview theme-swatch-default" aria-hidden="true"></span><span class="theme-choice-name">Beam Varsayılan</span></button>
-                <button type="button" class="theme-choice" data-launcher-theme="ragnar-legacy" aria-pressed="false" onclick="chooseLauncherTheme('ragnar-legacy')"><span class="theme-choice-preview theme-swatch-legacy" aria-hidden="true"></span><span class="theme-choice-name">Ragnar Legacy</span></button>
-                <button type="button" class="theme-choice" data-launcher-theme="ragnar-classic" aria-pressed="false" onclick="chooseLauncherTheme('ragnar-classic')"><span class="theme-choice-preview theme-swatch-classic" aria-hidden="true"></span><span class="theme-choice-name">Ragnar Classic</span></button>
-                <button type="button" class="theme-choice" data-launcher-theme="levelup-modern" aria-pressed="false" onclick="chooseLauncherTheme('levelup-modern')"><span class="theme-choice-preview theme-swatch-modern" aria-hidden="true"></span><span class="theme-choice-name">LevelUp Modern</span></button>
+                <button type="button" class="theme-choice" data-launcher-theme="default" aria-pressed="false" onclick="chooseLauncherTheme('default')"><span class="theme-choice-preview theme-swatch-default" aria-hidden="true"></span><span class="theme-choice-name">Turkuaz Standart</span></button>
+                <button type="button" class="theme-choice" data-launcher-theme="ragnar-legacy" aria-pressed="false" onclick="chooseLauncherTheme('ragnar-legacy')"><span class="theme-choice-preview theme-swatch-legacy" aria-hidden="true"></span><span class="theme-choice-name">Turkuaz Nostalji</span></button>
+                <button type="button" class="theme-choice" data-launcher-theme="ragnar-classic" aria-pressed="false" onclick="chooseLauncherTheme('ragnar-classic')"><span class="theme-choice-preview theme-swatch-classic" aria-hidden="true"></span><span class="theme-choice-name">Turkuaz Klasik</span></button>
+                <button type="button" class="theme-choice" data-launcher-theme="levelup-modern" aria-pressed="false" onclick="chooseLauncherTheme('levelup-modern')"><span class="theme-choice-preview theme-swatch-modern" aria-hidden="true"></span><span class="theme-choice-name">Turkuaz Modern</span></button>
             </div>
             <label for="theme-settings-choice">Tema listesi</label>
             <select id="theme-settings-choice" onchange="chooseLauncherTheme(this.value)">
-                <option value="default">Beam Varsayılan</option>
-                <option value="ragnar-legacy">Ragnar Legacy</option>
-                <option value="ragnar-classic">Ragnar Classic</option>
-                <option value="levelup-modern">LevelUp Modern</option>
+                <option value="default">Turkuaz Standart</option>
+                <option value="ragnar-legacy">Turkuaz Nostalji</option>
+                <option value="ragnar-classic">Turkuaz Klasik</option>
+                <option value="levelup-modern">Turkuaz Modern</option>
             </select>
             <p class="theme-settings-status" id="theme-settings-status" role="status" aria-live="polite"></p>
             <div class="theme-settings-actions">
+                <button type="button" id="qa-workspace-select" onclick="selectQaWorkspace()" hidden>Test Klasörü Seç</button>
                 <button type="button" id="theme-game-setup" onclick="openGameSetupFromSettings()">Oyun Ayarları</button>
                 <button type="button" onclick="closeThemeSettings()">Kapat</button>
             </div>
@@ -1343,7 +1361,7 @@
 
 
     <script>
-        // LevelUp visual settings: per-device preference, not patcher config.
+        // Turkuaz visual settings: per-device preference, not patcher config.
         // Check if running in Tauri or browser
         const isTauri = typeof window.__TAURI__ !== 'undefined';
         // Browser-only QA: file:///.../index.html?theme=ragnar-legacy
@@ -1362,6 +1380,7 @@
         let lastLoadedConfig = null;
         let activeLauncherTheme = 'default';
         let lastThemeSettingsTrigger = null;
+        let isOfflineQa = false;
 
         function safeStoredTheme() {
             try {
@@ -1445,6 +1464,18 @@
             }
         }
 
+        async function selectQaWorkspace() {
+            if (!isOfflineQa || !isTauri || isThemePreview) return;
+            const status = document.getElementById('theme-settings-status');
+            try {
+                const directory = await invoke('select_game_directory');
+                lastLoadedConfig = await invoke('get_config');
+                status.textContent = `Güvenli QA klasörü seçildi: ${directory}`;
+            } catch (error) {
+                status.textContent = `Klasör değiştirilmedi: ${error}`;
+            }
+        }
+
         async function openGameSetupFromSettings() {
             if (isThemePreview) return;
             closeThemeSettings();
@@ -1458,11 +1489,11 @@
                 console.log('Mock invoke:', cmd, args);
                 if (cmd === 'get_news') {
                     if (previewModern) return [
-                        { id: 201, category: 'event', title: 'LevelUp Games - Tema Önizlemesi', url: 'about:blank' },
+                        { id: 201, category: 'event', title: 'Turkuaz Ragnarok Online - Tema Önizlemesi', url: 'about:blank' },
                         { id: 202, category: 'event', title: 'Ragnarok Online Classic - Görsel Demo', url: 'about:blank' }
                     ];
                     if (previewClassic) return [
-                        { id: 101, category: 'event', title: 'Ragnar Ragnarok Online - Welcome', url: 'about:blank' },
+                        { id: 101, category: 'event', title: 'Turkuaz Ragnarok Online - Hoş Geldiniz', url: 'about:blank' },
                         { id: 102, category: 'event', title: 'Overlook Dungeon - Classic Event', url: 'about:blank' },
                         { id: 103, category: 'event', title: 'Daily Rewards and PvP Ranking', url: 'about:blank' }
                     ];
@@ -1471,9 +1502,7 @@
                         { id: 2, category: 'event', title: 'PvP and Rank System - legacy announcement', url: 'about:blank' },
                         { id: 3, category: 'event', title: 'Daily Rewards - legacy announcement', url: 'about:blank' }
                     ];
-                    const response = await fetch('https://goatmmo.com/api/cms/news?limit=3');
-                    const data = await response.json();
-                    return data.data;
+                    return [{ id: 1, category: 'event', title: 'Turkuaz Ragnarok Online - Çevrimdışı Önizleme', url: 'about:blank' }];
                 }
                 if (cmd === 'get_server_status') {
                     return { login_online: true, char_online: true, map_online: true };
@@ -1481,7 +1510,7 @@
                 if (cmd === 'get_config') {
                     return {
                         app: {
-                            server_name: isThemePreview ? 'Ragnar Ragnarok Online' : 'GOATMMO',
+                            server_name: 'Turkuaz Ragnarok Online',
                             bgm_autoplay: false,
                             video_background_enabled: !isThemePreview,
                             video_background_file: isThemePreview ? null : 'assets/trailer.mp4',
@@ -1516,7 +1545,14 @@
         async function checkPatchesOnStartup() {
             const progressLabel = document.getElementById('progress-label');
             const playButton = document.getElementById('play-button');
-            
+            if (isOfflineQa) {
+                playButton.disabled = true;
+                playButton.textContent = 'QA / Oyun Kapalı';
+                progressLabel.textContent =
+                    'TEST MODU: Sadece izole klasöre Manual Patch uygulanabilir.';
+                return;
+            }
+
             try {
                 progressLabel.textContent = 'Checking for updates...';
                 playButton.disabled = true;
@@ -1544,6 +1580,7 @@
         }
 
         async function handlePlayButton() {
+            if (isOfflineQa) return;
             const playButton = document.getElementById('play-button');
             
             if (isPatchingComplete || playButton.textContent === 'Play Now') {
@@ -1628,9 +1665,15 @@
         }
 
         async function manualPatch() {
+            if (isThemePreview) return;
+            const progressLabel = document.getElementById('progress-label');
             try {
                 await invoke('manual_patch');
+                progressLabel.textContent = isOfflineQa
+                    ? 'QA PATCH BAŞARILI: levelup-qa.grf oluşturuldu veya güncellendi.'
+                    : 'Manual patch completed successfully.';
             } catch (error) {
+                progressLabel.textContent = `Manual patch başarısız: ${error}`;
                 alert(`Manual patch failed: ${error}`);
             }
         }
@@ -1813,7 +1856,7 @@
                     dateText = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
                 }
                 
-                const newsUrl = news.url || `https://goatmmo.com/news/${news.id || ''}`;
+                const newsUrl = news.url || 'about:blank';
                 
                 return `
                     <div class="news-item" onclick="window.open('${newsUrl}', '_blank')">
@@ -1898,7 +1941,7 @@
                     }
                     
                     // Create news URL - adjust based on your website structure
-                    const newsUrl = news.url || `https://goatmmo.com/news/${news.id || ''}`;
+                    const newsUrl = news.url || 'about:blank';
                     
                     return `
                         <div class="news-item" onclick="window.open('${newsUrl}', '_blank')">
@@ -1916,58 +1959,57 @@
             }
         }
 
+        // PACKAGED ASSET CONTRACT: Tauri embeds public/assets in the frontend.
+        // Do not try to resolve these URLs as loose files next to an Inno EXE.
+        const builtInGridImages = Object.freeze([
+            'assets/turkuaz-user-classic-castle.svg', 'assets/turkuaz-user-adventurers.svg',
+            'assets/turkuaz-user-poring.svg', 'assets/turkuaz-dungeon.svg'
+        ]);
+
         async function loadImageGrid(config) {
-            // Do not fetch default third-party placeholder art during offline QA,
-            // or when LevelUp Modern has no explicitly approved artwork.
-            if (isThemePreview || (activeLauncherTheme === 'levelup-modern' &&
-                !(config.app && config.app.grid_images && config.app.grid_images.length))) {
-                for (const img of document.querySelectorAll('#image-grid img')) {
-                    img.removeAttribute('src');
-                    img.onerror = null;
-                }
-                return;
-            }
-            // Default placeholder images
-            const defaultImages = [
-                'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&h=400&fit=crop',
-                'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=400&h=400&fit=crop',
-                'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=400&fit=crop',
-                'https://images.unsplash.com/photo-1614732414444-096e5f1122d5?w=400&h=400&fit=crop'
-            ];
-            
-            console.log('Config:', config);
-            console.log('Grid images from config:', config.app?.grid_images);
-            
-            // Get images from config or use defaults
-            const imageUrls = (config.app && config.app.grid_images) ? config.app.grid_images : defaultImages;
-            console.log('Using images:', imageUrls);
-            
-            // Set images to grid items
+            const provided = Array.isArray(config?.app?.grid_images)
+                ? config.app.grid_images : [];
+
             for (let i = 1; i <= 4; i++) {
                 const img = document.getElementById(`grid-img-${i}`);
-                if (img) {
-                    const imagePath = imageUrls[i - 1] || defaultImages[i - 1];
-                    
-                    // Check if URL or local path
-                    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-                        // Direct URL
-                        img.src = imagePath;
-                    } else if (isTauri) {
-                        // Local asset path - resolve it
-                        try {
-                            const resolvedPath = await invoke('resolve_resource_path', { path: imagePath });
-                            img.src = window.__TAURI__.tauri.convertFileSrc(resolvedPath);
-                        } catch (err) {
-                            console.error(`Failed to load image ${i}:`, err);
-                            img.src = defaultImages[i - 1];
-                        }
-                    } else {
-                        img.src = imagePath;
+                if (!img) continue;
+                const tile = img.closest('.grid-image-item');
+                const fallback = builtInGridImages[i - 1];
+                const supplied = provided[i - 1];
+                const imagePath = typeof supplied === 'string' && supplied.trim()
+                    ? supplied.trim() : fallback;
+
+                img.onload = () => {
+                    img.style.display = 'block';
+                    tile?.classList.remove('is-image-missing');
+                };
+                img.onerror = () => {
+                    // A failed image must never loop through external placeholders.
+                    img.onerror = null;
+                    img.removeAttribute('src');
+                    img.style.display = 'none';
+                    tile?.classList.add('is-image-missing');
+                    console.warn(`Launcher tile ${i} failed to load.`);
+                };
+
+                if (isThemePreview && /^https?:\/\//i.test(imagePath)) {
+                    img.src = fallback;
+                } else if (/^https?:\/\//i.test(imagePath)) {
+                    // External artwork is opt-in only via an explicit config URL.
+                    img.src = imagePath;
+                } else if (/^assets\/[a-zA-Z0-9_.-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(imagePath)) {
+                    // Always load trusted bundled images through the page origin:
+                    // tauri://localhost/assets/N.png (or localhost browser QA).
+                    img.src = new URL(imagePath, document.baseURI).href;
+                } else if (isTauri && !isOfflineQa && !isThemePreview) {
+                    try {
+                        const absolutePath = await invoke('resolve_resource_path', { path: imagePath });
+                        img.src = window.__TAURI__.tauri.convertFileSrc(absolutePath);
+                    } catch (error) {
+                        img.src = fallback;
                     }
-                    
-                    img.onerror = function() {
-                        this.src = `https://via.placeholder.com/400x400/1a1f2e/6366f1?text=Image+${i}`;
-                    };
+                } else {
+                    img.src = fallback;
                 }
             }
         }
@@ -2010,7 +2052,9 @@
         async function promptGameDirectorySelection() {
             try {
                 const result = await window.__TAURI__.dialog.message(
-                    'Welcome! Please select your game directory to continue.\n\nThe patcher will search for the game executable in both the selected directory and the patcher folder.',
+                    isOfflineQa
+                        ? 'Turkuaz Ragnarok Online QA test modu. Yalnızca YENİ ve BOŞ bir test klasörü seçin. Gerçek Ragnarok oyun klasörünü seçmeyin.'
+                        : 'Welcome! Please select your game directory to continue.\n\nThe patcher will search for the game executable in both the selected directory and the patcher folder.',
                     { title: 'Initial Setup', type: 'info', okLabel: 'Select Directory' }
                 );
                 
@@ -2026,7 +2070,9 @@
                 } catch (err) {
                     console.error('Failed to select directory:', err);
                     await window.__TAURI__.dialog.message(
-                        'No directory selected. The patcher will look for game files in the patcher folder.\n\nYou can set the game directory later from settings.',
+                        isOfflineQa
+                            ? 'QA klasörü seçilmedi. Test patch uygulanmayacak. Ayarlar içinden boş bir klasör seçebilirsiniz.'
+                            : 'No directory selected. The patcher will look for game files in the patcher folder.\n\nYou can set the game directory later from settings.',
                         { title: 'Setup Skipped', type: 'warning' }
                     );
                 }
@@ -2042,7 +2088,14 @@
             setInterval(updateServerStatus, 30000);
             
             let config = await invoke('get_config');
-            
+            isOfflineQa = Boolean(isTauri && config?.patcher?.qa_only);
+            if (isOfflineQa) {
+                document.getElementById('qa-workspace-select').hidden = false;
+                document.getElementById('theme-game-setup').disabled = true;
+                document.getElementById('register-btn-main').disabled = true;
+                document.getElementById('play-button').disabled = true;
+            }
+
             const needsSetup = await invoke('check_initial_setup');
             if (needsSetup && isTauri) {
                 config = await promptGameDirectorySelection();

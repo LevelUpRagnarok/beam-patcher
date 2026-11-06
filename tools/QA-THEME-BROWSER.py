@@ -2,7 +2,7 @@
 # Dosya Yolu: tools/QA-THEME-BROWSER.py
 # Amac: Dort Beam tema gorunumunu gercek Chromium uzerinde offline smoke ile dogrular
 # Modul - Python / Playwright / Visual QA
-# Version: 0.2.2-candidate
+# Version: 0.3.0-candidate
 # Aciklama: Yerel dosyalardan render; Tauri komutlari salt okunur test doubles; oyun/patch yok
 # Bagimli Oldugu Katman: beam-ui/public/index.html | assets/*.css | browser QA
 
@@ -32,12 +32,12 @@ MOCK_TAURI = r"""
   window.__QA_NATIVE_CALLS = calls;
   const config = {
     app: {
-      server_name: "LEVELUP GAMES / OFFLINE QA",
+      server_name: "TURKUAZ RAGNAROK ONLINE / OFFLINE QA",
       version: "0.1.0-qa",
       bgm_autoplay: false,
       video_background_enabled: false,
       limited_items: [],
-      grid_images: ["assets/1.png", "assets/2.png", "assets/3.png", "assets/4.png"],
+      grid_images: ["assets/turkuaz-user-classic-castle.svg", "assets/turkuaz-user-adventurers.svg", "assets/turkuaz-user-poring.svg", "assets/turkuaz-dungeon.svg"],
       social_links: [],
       register_url: null
     },
@@ -54,7 +54,7 @@ MOCK_TAURI = r"""
           case "get_config": return config;
           case "check_initial_setup": return false;
           case "get_news": return [
-            { id: 1, title: "LevelUp Games - offline QA", category: "event", url: "about:blank" },
+            { id: 1, title: "Turkuaz Ragnarok Online - offline QA", category: "event", url: "about:blank" },
             { id: 2, title: "Gorunum temalari", category: "event", url: "about:blank" }
           ];
           case "get_server_status":
@@ -63,7 +63,7 @@ MOCK_TAURI = r"""
             throw new Error("OFFLINE_QA_NO_PATCH_ACCESS");
           case "open_setup": return null;
           case "resolve_resource_path":
-            if (!["assets/1.png", "assets/2.png", "assets/3.png", "assets/4.png"]
+            if (!["assets/turkuaz-user-classic-castle.svg", "assets/turkuaz-user-adventurers.svg", "assets/turkuaz-user-poring.svg", "assets/turkuaz-dungeon.svg"]
                 .includes(args?.path)) {
               throw new Error("OFFLINE_QA_ASSET_DENIED");
             }
@@ -233,6 +233,15 @@ def run(output_dir, source_sha):
             panel.locator(".theme-settings-close").click()
             require(panel.is_hidden(), f"{theme}: modal did not close")
             page.locator("#news-cards .news-item").first.wait_for(timeout=8000)
+            page.wait_for_function("""() => [...document.querySelectorAll('#image-grid img')]
+                .every(img => img.complete && img.naturalWidth > 0 && img.naturalHeight > 0)
+            """, timeout=10000)
+            require(
+                page.evaluate("""() => [...document.querySelectorAll('#image-grid img')]
+                    .every(img => img.currentSrc.startsWith(document.baseURI.replace('index.html', 'assets/')))
+                """),
+                f"{theme}: grid image loaded from outside embedded frontend assets",
+            )
             screenshot = output_dir / f"{theme}.png"
             page.screenshot(path=str(screenshot), animations="disabled")
             require(screenshot.stat().st_size > 5000, f"{theme}: suspicious screenshot")
@@ -253,6 +262,34 @@ def run(output_dir, source_sha):
             page.evaluate("() => window.__QA_NATIVE_CALLS.includes('check_patches_available')"),
             "Tauri-like launch path was not exercised",
         )
+        # A separate browser context exercises the real UI's QA-only branch.
+        # The mocked native adapter cannot launch game, patch or open a real
+        # folder, and does not share theme preferences with the primary run.
+        qa_context = browser.new_context(viewport={"width": 900, "height": 620})
+        qa_mock = MOCK_TAURI.replace(
+            "    ui: {", "    patcher: {qa_only: true}," + chr(10) + "    ui: {", 1
+        )
+        qa_context.add_init_script(qa_mock)
+        qa_page = qa_context.new_page()
+        qa_page.route("**/*", route)
+        qa_page.goto(preview_url, wait_until="domcontentloaded", timeout=30000)
+        qa_page.wait_for_function("document.getElementById('play-button')?.textContent === 'QA / Oyun Kapalı'",
+                                  timeout=15000)
+        require(qa_page.locator("#play-button").is_disabled(), "QA Play action should be disabled")
+        qa_page.locator("#theme-settings-open").click()
+        require(qa_page.locator("#qa-workspace-select").is_visible(),
+                "QA folder selection must be accessible from Settings")
+        require(qa_page.locator("#theme-game-setup").is_disabled(),
+                "Unconfigured QA game setup must not launch")
+        require(
+            "TEST MODU" in qa_page.locator("#progress-label").inner_text(),
+            "QA safety message not shown",
+        )
+        require(
+            qa_page.evaluate("() => !window.__QA_NATIVE_CALLS.includes('check_patches_available')"),
+            "QA build unexpectedly queried patch feed",
+        )
+        qa_context.close()
         browser.close()
 
     summary = {
@@ -262,7 +299,9 @@ def run(output_dir, source_sha):
         "viewport": {"width": 900, "height": 620},
         "themes": list(THEMES),
         "preference_survived_reload": True,
+        "embedded_grid_images_loaded": True,
         "game_or_patch_commands": 0,
+        "qa_ui_blocks_play_and_patch_feed": True,
         "external_requests_blocked": len(blocked),
         "screenshots": artifacts,
         "desktop_webview2": "NOT RUN",

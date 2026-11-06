@@ -4,7 +4,7 @@
 # Version: 0.3.1-candidate
 # Aciklama: Offline source check only, no game files/patcher binary/release.
 # Bagimli Oldugu Katman: tools/tests/test_ragnar_legacy_theme.py | beam-ui/public/index.html
-name: Ragnar Legacy and Classic Themes Offline QA
+name: Turkuaz Ragnarok Online Launcher Theme QA
 
 on:
   push:
@@ -14,11 +14,18 @@ on:
       - "beam-ui/public/assets/ragnar-legacy.css"
       - "beam-ui/public/assets/ragnar-classic.css"
       - "beam-ui/public/assets/levelup-modern.css"
+      - "beam-ui/public/assets/turkuaz-premium.css"
+      - "beam-ui/public/assets/turkuaz-reference-restore.css"
+      - "beam-ui/public/assets/turkuaz-user-*.svg"
+      - "beam-ui/public/assets/turkuaz-*.svg"
       - "themes/ragnar-classic/**"
       - "themes/levelup-modern/**"
       - "themes/README.md"
       - "tools/tests/test_ragnar_classic_theme.py"
       - "tools/tests/test_levelup_modern_theme.py"
+      - "tools/tests/test_turkuaz_branding.py"
+      - "tools/tests/test_turkuaz_premium_theme.py"
+      - "tools/tests/test_turkuaz_reference_restore.py"
       - "tools/QA-THEME-BROWSER.py"
       - "themes/ragnar-legacy/**"
       - "tools/tests/test_ragnar_legacy_theme.py"
@@ -29,11 +36,18 @@ on:
       - "beam-ui/public/assets/ragnar-legacy.css"
       - "beam-ui/public/assets/ragnar-classic.css"
       - "beam-ui/public/assets/levelup-modern.css"
+      - "beam-ui/public/assets/turkuaz-premium.css"
+      - "beam-ui/public/assets/turkuaz-reference-restore.css"
+      - "beam-ui/public/assets/turkuaz-user-*.svg"
+      - "beam-ui/public/assets/turkuaz-*.svg"
       - "themes/ragnar-classic/**"
       - "themes/levelup-modern/**"
       - "themes/README.md"
       - "tools/tests/test_ragnar_classic_theme.py"
       - "tools/tests/test_levelup_modern_theme.py"
+      - "tools/tests/test_turkuaz_branding.py"
+      - "tools/tests/test_turkuaz_premium_theme.py"
+      - "tools/tests/test_turkuaz_reference_restore.py"
       - "tools/QA-THEME-BROWSER.py"
       - "themes/ragnar-legacy/**"
       - "tools/tests/test_ragnar_legacy_theme.py"
@@ -55,8 +69,14 @@ jobs:
         run: python3 -B -m unittest discover -s tools/tests -p 'test_ragnar_legacy_theme.py' -v
       - name: Seven screenshot-based classic launcher UI layout and safety contracts
         run: python3 -B -m unittest discover -s tools/tests -p 'test_ragnar_classic_theme.py' -v
-      - name: LevelUp Modern preference, settings, and offline visual QA
+      - name: Turkuaz Modern preference, settings, and offline visual QA
         run: python3 -B -m unittest discover -s tools/tests -p 'test_levelup_modern_theme.py' -v
+      - name: Turkuaz visible branding and safe QA compatibility contract
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_branding.py' -v
+      - name: Premium artwork SVG validity and visual safety contracts
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_premium_theme.py' -v
+      - name: User reference images and native buttons restore contract
+        run: python3 -B -m unittest discover -s tools/tests -p 'test_turkuaz_reference_restore.py' -v
       - name: Extract inline Beam UI JavaScript for syntax validation
         shell: bash
         run: |

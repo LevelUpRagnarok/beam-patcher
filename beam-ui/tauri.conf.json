@@ -7,8 +7,8 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "Beam Patcher",
-    "version": "1.0.0"
+    "productName": "Turkuaz Ragnarok Online",
+    "version": "1.0.1"
   },
   "tauri": {
     "allowlist": {
@@ -16,17 +16,26 @@
       "http": {
         "all": true,
         "request": true,
-        "scope": ["https://goatmmo.com/**", "https://**", "http://**"]
+        "scope": [
+          "https://**",
+          "http://**"
+        ]
       },
       "fs": {
         "all": false,
         "readFile": true,
-        "scope": ["$RESOURCE/**", "$RESOURCE/assets/**"]
+        "scope": [
+          "$RESOURCE/**",
+          "$RESOURCE/assets/**"
+        ]
       },
       "protocol": {
         "all": false,
         "asset": true,
-        "assetScope": ["$RESOURCE/**", "$RESOURCE/assets/**"]
+        "assetScope": [
+          "$RESOURCE/**",
+          "$RESOURCE/assets/**"
+        ]
       },
       "shell": {
         "all": false,
@@ -48,12 +57,8 @@
       }
     },
     "bundle": {
-      "active": true,
+      "active": false,
       "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
         "icons/icon.ico"
       ],
       "identifier": "com.beampatcher.app",
@@ -66,7 +71,7 @@
       "csp": null
     },
     "updater": {
-      "active": true,
+      "active": false,
       "endpoints": [
         "https://patch.example.com/updates/{{target}}/{{current_version}}"
       ],
@@ -75,7 +80,7 @@
     },
     "windows": [
       {
-        "title": "Beam Patcher - Advanced RO Launcher",
+        "title": "Turkuaz Ragnarok Online (TEST MODU)",
         "width": 900,
         "height": 620,
         "resizable": false,

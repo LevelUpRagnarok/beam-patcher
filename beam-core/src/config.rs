@@ -52,6 +52,9 @@ pub struct PatcherConfig {
     pub target_grf: String,
     pub allow_manual_patch: bool,
     pub verify_checksums: bool,
+    /// Explicit offline-only QA policy. Absent in existing deployments.
+    #[serde(default)]
+    pub qa_only: bool,
     /// Optional deployment-enforced per-region identity and patch SHA256 policy.
     /// Existing generic Beam installs stay unchanged when omitted.
     #[serde(default)]
@@ -155,7 +158,12 @@ pub struct ServerConfig {
 impl Config {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
-        let config: Config = serde_yaml::from_str(&content)?;
+        let mut config: Config = serde_yaml::from_str(&content)?;
+        // Older QA setup packages had no qa_only field. Preserve the user's
+        // configuration, but never interpret that absence as production mode.
+        if crate::qa_guard::is_qa_app_name(&config.app.name) {
+            config.patcher.qa_only = true;
+        }
         config.validate()?;
         Ok(config)
     }
@@ -167,6 +175,11 @@ impl Config {
     }
     
     pub fn validate(&self) -> Result<()> {
+        if crate::qa_guard::is_qa_app_name(&self.app.name) && !self.patcher.qa_only {
+            return Err(Error::InvalidConfig(
+                "Turkuaz Ragnarok Online QA profile cannot disable isolation".into()
+            ));
+        }
         if self.patcher.mirrors.is_empty() {
             return Err(Error::InvalidConfig("At least one mirror must be configured".to_string()));
         }
@@ -179,6 +192,7 @@ impl Config {
             return Err(Error::InvalidConfig("Target GRF cannot be empty".to_string()));
         }
         
+        crate::qa_guard::validate_qa_config(self)?;
         Ok(())
     }
     
@@ -189,15 +203,15 @@ impl Config {
     pub fn default() -> Self {
         Config {
             app: AppConfig {
-                name: "Beam Patcher".to_string(),
+                name: "Turkuaz Ragnarok Online".to_string(),
                 version: "1.0.0".to_string(),
-                window_title: "Beam Patcher - Modern RO Patcher".to_string(),
+                window_title: "Turkuaz Ragnarok Online".to_string(),
                 game_directory: None,
                 client_exe: "Ragnarok.exe".to_string(),
                 setup_exe: Some("setup.exe".to_string()),
                 bgm_autoplay: Some(false),
                 bgm_file: None,
-                server_name: Some("MyRO".to_string()),
+                server_name: Some("Turkuaz Ragnarok Online".to_string()),
                 video_background_enabled: Some(false),
                 video_background_file: None,
                 grid_images: None,
@@ -218,6 +232,7 @@ impl Config {
                 target_grf: "data.grf".to_string(),
                 allow_manual_patch: true,
                 verify_checksums: true,
+                qa_only: false,
                 compatibility_guard: None,
             },
             ui: UiConfig {
@@ -260,5 +275,46 @@ impl Config {
                 map_server_port: 5121,
             }),
         }
+    }
+}
+
+#[cfg(test)]
+mod qa_config_migration_tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn branded_qa_profile_cannot_opt_out_of_isolation() {
+        let mut config = Config::default();
+        config.app.name = crate::qa_guard::QA_APP_NAME.to_owned();
+        config.patcher.qa_only = false;
+        assert!(config.validate().is_err());
+        config.app.name = crate::qa_guard::LEGACY_QA_APP_NAME.to_owned();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn legacy_qa_config_is_migrated_in_memory_without_rewriting_user_file() {
+        let mut config = Config::default();
+        config.app.name = crate::qa_guard::LEGACY_QA_APP_NAME.to_owned();
+        config.app.client_exe = "NO_CLIENT_CONFIGURED.exe".to_owned();
+        config.patcher.target_grf = "levelup-qa.grf".to_owned();
+        config.patcher.patch_list_url = "http://127.0.0.1:9/disabled/patchlist.txt".into();
+        config.patcher.mirrors[0].url = "http://127.0.0.1:9/disabled".into();
+        config.patcher.qa_only = false;
+        config.updater = None;
+        assert!(config.validate().is_err());
+
+        let path = std::env::temp_dir().join(format!(
+            "beam-legacy-qa-{}-{}.yml",
+            std::process::id(),
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        config.save(&path).unwrap();
+        let original = std::fs::read(&path).unwrap();
+        let loaded = Config::load(&path).unwrap();
+        assert!(loaded.patcher.qa_only);
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        std::fs::remove_file(path).unwrap();
     }
 }

@@ -1,13 +1,13 @@
 <!--
 Dosya Yolu: themes/ragnar-legacy/README.md
-Amac: Ragnar Ragnarok Online Beam patcher classic theme and safety boundaries
+Amac: Turkuaz Ragnarok Online nostalji Beam theme and safety boundaries
 Modul - Markdown theme documentation
 Version: 0.1.0-candidate
 Aciklama: Visual-only theme, based on known 2015 THOR patcher web assets
 Bagimli Oldugu Katman: beam-ui/public/assets/ragnar-legacy.css | beam-ui/public/index.html
 -->
 
-# Ragnar Ragnarok Online — Legacy-inspired Beam Theme
+# Turkuaz Nostalji — historical launcher-inspired theme
 
 **Status: Visual QA only; no real client patch, game launch, or release.**
 
@@ -33,13 +33,13 @@ The theme is shipped as an opt-in CSS file already included in the
 Beam UI web assets:
 `beam-ui/public/assets/ragnar-legacy.css`.
 
-**New Beam default remains unchanged** unless the config contains:
+**The Turkuaz default theme stays selected** unless the config contains:
 
 ```yaml
 app:
-  name: "Ragnar Ragnarok Online"
-  window_title: "Ragnar Ragnarok Online"
-  server_name: "Ragnar Ragnarok Online"
+  name: "Turkuaz Ragnarok Online"
+  window_title: "Turkuaz Ragnarok Online"
+  server_name: "Turkuaz Ragnarok Online"
 
 ui:
   theme: "ragnar-legacy"
@@ -71,7 +71,7 @@ channel, EXE or GRF is installed or written. The browser may still
 load existing third-party font/icon resources from the upstream HTML.
 
 Verify:
-- Ragnar title and cream/rose theme appear instead of GOATMMO indigo.
+- Turkuaz Ragnarok Online title and cream/rose theme appear instead of the standard indigo layout.
 - Legacy-derived mock historical announcements appear without a news API call.
 - Preview-only banner and disabled patch/game controls are visible.
 - Other theme/default config retains the existing Beam design.
