@@ -459,8 +459,6 @@ GRF (Game Resource File) is the primary archive format for Ragnarok Online.
 - 0x102/0x103 protected or encrypted variants, 0x201/0x300, and encrypted or unknown per-entry flags are not claimed as supported; they fail closed where detected.
 - CP949 filename decoding is not implemented or verified.
 
-```
-
 **Advantages:**
 - ✅ MD5 verification per file
 - ✅ Zlib compression
@@ -624,7 +622,7 @@ beam.verify_all()?;
 
 ## Disclaimer
 
-This patcher is designed for legitimate use with Ragnarok Online private servers. It supports multiple GRF formats including standard formats (0x101-0x200) and custom encryption formats (0x300/Gepard Shield) later for future updates.
+This patcher is intended for authorized Ragnarok Online private-server tooling. GRF compatibility is limited to the verified read/write paths listed above. It does not currently support 0x300/Gepard Shield or claim compatibility with a specific game client.
 
 **Intended Use:**
 - ✅ Private server owners managing game updates
