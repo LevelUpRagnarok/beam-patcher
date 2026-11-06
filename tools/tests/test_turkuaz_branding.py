@@ -2,8 +2,8 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_turkuaz_branding.py
 # Amac: Turkuaz Ragnarok Online gorunur marka ve QA uyumluluk kontrati
 # Modul - Python unittest
-# Version: 1.0.0-candidate
-# Aciklama: Eski tema ID'lerini ve izole QA profilini koruyarak gorunur adi denetler
+# Version: 2.0.0-candidate
+# Aciklama: Eski tema ID'lerini, izole QA profilini ve tek Rust installer politikasini korur
 # Bagimli Oldugu Katman: beam-ui/public/index.html | beam-core/src/config.rs | installer/windows
 
 import json
@@ -16,10 +16,6 @@ TAURI = json.loads((ROOT / "beam-ui/tauri.conf.json").read_text(encoding="utf-8"
 QA = (ROOT / "installer/windows/config.qa.yml").read_text(encoding="utf-8")
 CONFIG = (ROOT / "beam-core/src/config.rs").read_text(encoding="utf-8")
 GUARD = (ROOT / "beam-core/src/qa_guard.rs").read_text(encoding="utf-8")
-NSIS = (ROOT / "installer/windows/BeamPatcher-NSIS-Backup.nsi").read_text(encoding="utf-8")
-DUAL = (ROOT / ".github/workflows/dual-installer-policy.yml").read_text(encoding="utf-8")
-WIN = (ROOT / ".github/workflows/windows-setup-patch-qa.yml").read_text(encoding="utf-8")
-VERIFY = (ROOT / "tools/verify_installer_pair.py").read_text(encoding="utf-8")
 
 
 class TurkuazBrandingTests(unittest.TestCase):
@@ -64,19 +60,38 @@ class TurkuazBrandingTests(unittest.TestCase):
         self.assertIn("is_qa_app_name(&self.app.name)", CONFIG)
         self.assertIn("config.patcher.qa_only = true;", CONFIG)
 
-    def test_nsis_stays_private_and_matches_windows_ci(self):
-        setup = "TurkuazRagnarokOnline-NSIS-BACKUP-QA-Setup.exe"
-        folder = "Programs/TurkuazSoft/Turkuaz Ragnarok Online QA-NSIS-Backup"
-        self.assertIn(setup, NSIS)
-        self.assertIn(setup, DUAL)
-        self.assertIn(setup, WIN)
-        self.assertIn(setup, VERIFY)
-        self.assertIn(folder, DUAL)
-        self.assertIn(folder, WIN)
-        self.assertIn("NSIS BACKUP ONLY", NSIS)
-        self.assertIn("Turkuaz Ragnarok Online QA", NSIS)
-        self.assertIn("verify_installer_pair.py", DUAL)
-        self.assertNotIn("LevelUpGames-Beam-NSIS-BACKUP-QA-Setup.exe", DUAL)
+    def test_rust_is_the_only_active_installer_policy(self):
+        retired = (
+            "installer/windows/BeamPatcher-NSIS-Backup.nsi",
+            "installer/windows/BeamPatcher-QA.iss",
+            "tools/verify_installer_pair.py",
+            "tools/Assert-BeamManifestSetupBinding.ps1",
+            ".github/workflows/dual-installer-policy.yml",
+        )
+        for relative in retired:
+            with self.subTest(path=relative):
+                self.assertFalse((ROOT / relative).exists())
+
+        installer = ROOT / "installer"
+        self.assertFalse(any(installer.rglob("*.nsi")))
+        self.assertFalse(any(installer.rglob("*.iss")))
+
+        primary_workflow = ROOT / ".github/workflows/turkuaz-primary-policy.yml"
+        candidate_workflow = ROOT / ".github/workflows/rust-installer-beam-compat.yml"
+        primary_verifier = ROOT / "tools/verify_installer_primary.py"
+        workflow_policy = ROOT / "tools/check_installer_workflows.py"
+        for required in (primary_workflow, candidate_workflow, primary_verifier, workflow_policy):
+            with self.subTest(path=required.relative_to(ROOT)):
+                self.assertTrue(required.is_file())
+
+        policy = workflow_policy.read_text(encoding="utf-8")
+        release_gate = primary_workflow.read_text(encoding="utf-8")
+        self.assertIn("TurkuazInstaller", policy)
+        self.assertIn("tools/verify_installer_primary.py", policy)
+        self.assertIn("build-primary-and-gate:", release_gate)
+        self.assertIn("if: github.event_name == 'workflow_dispatch'", release_gate)
+        self.assertNotIn("actions/setup-dotnet", release_gate)
+        self.assertNotIn("dotnet publish", release_gate)
 
 
 if __name__ == "__main__":
