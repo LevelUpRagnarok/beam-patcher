@@ -1,3 +1,10 @@
+// Dosya Yolu: REPO_ROOT/beam-formats/src/grf.rs
+// Amac: GRF archive table read/write with fail-closed path decoding
+// Modul - Rust
+// Version: 1.0.1
+// Aciklama: Unknown legacy filename encodings are rejected instead of lossily rewritten
+// Bagimli Oldugu Katman: beam-formats
+
 use crate::{Error, Result};
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
@@ -13,6 +20,17 @@ const GRF_VERSION_0X102: u32 = 0x102;
 const GRF_VERSION_0X103: u32 = 0x103;
 const GRF_VERSION_0X200: u32 = 0x200;
 const GRF_VERSION_0X300: u32 = 0x300;
+
+/// Interpret archive names only when the byte sequence is valid UTF-8.
+/// The legacy client code page is not verified; lossy replacement could map a
+/// patch to a different path and must fail closed.
+fn decode_grf_filename(bytes: &[u8]) -> Result<String> {
+    std::str::from_utf8(bytes)
+        .map(str::to_owned)
+        .map_err(|_| Error::Unsupported(
+            "GRF filename bytes are not valid UTF-8; legacy code-page decoding is not verified".to_string()
+        ))
+}
 
 #[derive(Debug, Clone)]
 pub struct GrfEntry {
@@ -200,7 +218,7 @@ impl Grf {
                         break; // No more entries
                     }
                     
-                    let filename = String::from_utf8_lossy(&filename_bytes).to_string();
+                    let filename = decode_grf_filename(&filename_bytes)?;
                     
                     let mut compressed_size_buf = [0u8; 4];
                     cursor.read_exact(&mut compressed_size_buf)?;
@@ -299,7 +317,7 @@ impl Grf {
                         break; // No more entries
                     }
                     
-                    let filename = String::from_utf8_lossy(&filename_bytes).to_string();
+                    let filename = decode_grf_filename(&filename_bytes)?;
                     
                     let mut compressed_size_buf = [0u8; 4];
                     cursor.read_exact(&mut compressed_size_buf)?;
@@ -350,7 +368,7 @@ impl Grf {
                     
                     let mut filename_buf = vec![0u8; filename_len as usize];
                     reader.read_exact(&mut filename_buf)?;
-                    let filename = String::from_utf8_lossy(&filename_buf).to_string();
+                    let filename = decode_grf_filename(&filename_buf)?;
                     
                     let mut compressed_size_buf = [0u8; 4];
                     reader.read_exact(&mut compressed_size_buf)?;
@@ -897,6 +915,64 @@ mod encrypted_entry_flag_rejection_tests {
             assert!(!path.with_extension("grf.tmp").exists());
             Ok(())
         })();
+        let _ = std::fs::remove_file(&path);
+        result.unwrap();
+    }
+}
+
+
+#[cfg(test)]
+mod grf_path_encoding_tests {
+    use super::*;
+
+    fn archive_with_0x200_filename(filename: &[u8]) -> Vec<u8> {
+        let mut table = filename.to_vec();
+        table.push(0);
+        // compressed size, aligned size, uncompressed size, flags and offset
+        table.extend_from_slice(&[0u8; 17]);
+
+        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(&table).unwrap();
+        let compressed_table = encoder.finish().unwrap();
+
+        let mut archive = vec![0u8; GRF_HEADER_SIZE as usize];
+        archive[38..42].copy_from_slice(&1u32.to_le_bytes());
+        archive.extend_from_slice(&(compressed_table.len() as u32).to_le_bytes());
+        archive.extend_from_slice(&(table.len() as u32).to_le_bytes());
+        archive.extend_from_slice(&compressed_table);
+        archive
+    }
+
+    #[test]
+    fn rejects_cp949_filename_bytes_instead_of_replacing_them() {
+        // CP949 bytes for Hangul '가'; they are not valid UTF-8.
+        let mut archive = archive_with_0x200_filename(&[0xB0, 0xA1]);
+        let result = Grf::read_file_table(
+            &mut std::io::Cursor::new(&mut archive),
+            GRF_VERSION_0X200,
+        );
+
+        assert!(matches!(
+            result,
+            Err(Error::Unsupported(message))
+                if message.contains("legacy code-page decoding is not verified")
+        ));
+    }
+
+    #[test]
+    fn preserves_valid_utf8_hangul_filename_roundtrip() {
+        let path = tmp_grf("utf8_korean_filename");
+        let result = (|| -> Result<()> {
+            let filename = "data\\가.txt";
+            let mut grf = Grf::create_new(&path)?;
+            grf.patch_file(filename, b"utf8-path-data")?;
+            grf.save()?;
+
+            let reopened = Grf::open(&path)?;
+            assert_eq!(reopened.extract_file(filename)?, b"utf8-path-data");
+            Ok(())
+        })();
+
         let _ = std::fs::remove_file(&path);
         result.unwrap();
     }
