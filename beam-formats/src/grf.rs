@@ -961,7 +961,14 @@ mod grf_path_encoding_tests {
 
     #[test]
     fn preserves_valid_utf8_hangul_filename_roundtrip() {
-        let path = tmp_grf("utf8_korean_filename");
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "beam-grf-utf8-korean-{}-{stamp}.grf",
+            std::process::id()
+        ));
         let result = (|| -> Result<()> {
             let filename = "data\\가.txt";
             let mut grf = Grf::create_new(&path)?;
