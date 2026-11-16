@@ -16,6 +16,8 @@ RELEASE_WORKFLOW = "turkuaz-primary-policy.yml"
 REQUIRED = (
     "AGENTS.md",
     "tools/verify_installer_primary.py",
+    "tools/check_product_release_payload.py",
+    "tools/tests/test_release_payload_gate.py",
     "tools/check_installer_workflows.py",
     "tools/Confirm-TurkuazTrust.ps1",
     "tools/Test-BeamRustProtectedPrimary.ps1",
@@ -47,6 +49,8 @@ REQUIRED_RUST_GATE_TOKENS = (
     "TurkuazInstaller",
     "ref: 456a34679661978afc717cc5b08ece11cb0b9a94",
     "tools/verify_installer_primary.py",
+    "tools/check_product_release_payload.py",
+    "--expected-exe target/release/beam-patcher.exe",
     "build-package",
     "--features setup-gui",
     "windows-latest",
