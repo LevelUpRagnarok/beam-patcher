@@ -6,7 +6,6 @@
 # Aciklama: Sadece sentetik ZIP ve JSON testidir, gercek imza ve native kurulum degildir
 # Bagimli Oldugu Katman: tools/check_product_release_payload.py
 
-import copy
 import json
 from pathlib import Path
 import sys
@@ -34,8 +33,8 @@ def profile():
             "qa_only": False,
             "verify_checksums": True,
             "target_grf": "data.grf",
-            "patch_list_url": "https://patch.levelup.example.org/patchlist.txt",
-            "mirrors": [{"name": "primary", "url": "https://patch.levelup.example.org/"}],
+            "patch_list_url": "https://patch.release-fixture.net/patchlist.txt",
+            "mirrors": [{"name": "primary", "url": "https://patch.release-fixture.net/"}],
             "compatibility_guard": {
                 "profile_id": "region-one",
                 "region": "eu",
