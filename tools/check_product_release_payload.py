@@ -94,7 +94,7 @@ def public_https(value) -> bool:
 def nonplaceholder(value) -> bool:
     return (isinstance(value, str) and 1 <= len(value) <= 96 and
             value.strip() == value and
-            not re.search(r"(?i)(?:^|[\\s_-])(qa|test|sample|demo)(?:$|[\\s_-])", value) and
+            not re.search(r"(?i)(?:^|[\s_-])(qa|test|sample|demo)(?:$|[\s_-])", value) and
             "placeholder" not in value.casefold())
 
 
@@ -167,7 +167,7 @@ def archive_digest(archive: zipfile.ZipFile, member: zipfile.ZipInfo) -> str:
 def audit(package: Path, expected_exe: Path, package_id: str, version: str) -> dict:
     require(non_test_id(package_id), "production package ID cannot be QA/test")
     require(bool(re.fullmatch(r"0|[1-9][0-9]*", version.split(".")[0])) and
-            bool(re.fullmatch(r"[0-9]+\\.[0-9]+\\.[0-9]+", version)),
+            bool(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)),
             "invalid product semantic version")
     require(package.is_file() and not package.is_symlink(), "missing Rust tzpkg")
     require(expected_exe.is_file() and not expected_exe.is_symlink(),
