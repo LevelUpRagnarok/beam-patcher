@@ -37,8 +37,8 @@ def profile():
             "mirrors": [{"name": "primary", "url": "https://patch.release-fixture.net/"}],
             "compatibility_guard": {
                 "profile_id": "region-one",
-                "region": "eu",
-                "channel": "stable",
+                "region": "levelupgt",
+                "channel": "custom",
                 "client_exe_sha256": "1" * 64,
                 "manifest_file": "client-manifest.json",
             },
