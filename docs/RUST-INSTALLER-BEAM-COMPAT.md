@@ -68,3 +68,33 @@ Run the synthetic offline tests:
     python -m unittest discover -s tools/tests -p test_rust_installer_candidate.py -v
 
 See docs/INSTALLER-STRATEGY-TURKUAZ.md.
+
+## Product payload safety gate (2026-11-17)
+
+The protected `build-primary-and-gate` path now explicitly calls
+`tools/check_product_release_payload.py` before accepting an externally
+signed bundle. It checks the staged Rust v2 `.tzpkg` product identity,
+exact rebuilt Beam executable bytes and strict production profile.
+
+**This is intentionally BLOCKED on the current `main` baseline**:
+the protected workflow still stages `levelupgt.beampatcher.qa` with
+`installer/windows/config.qa.yml`. The new gate refuses that QA package
+even if a publisher-signed bundle is later provided. Removing this check
+is not a valid workaround for release. The isolated Rust QA pipeline
+continues to test its QA-only artifact separately.
+
+For a future product candidate, the staged `config.yml` must contain
+an unambiguous UTF-8 **JSON object** (JSON syntax is valid YAML for Beam's
+`serde_yaml` parser), not a free-form YAML document. Its package version,
+non-QA identity, real HTTPS endpoints, checksums and supported
+region/channel client guard must be verified; the signed package must
+contain exactly the source-built Beam executable. No example URLs,
+unverified client files, QA sentinel filenames or hard-coded machine
+install locations are acceptable.
+
+This preflight is *structural*, not an endpoint ownership check, runtime
+client acceptance, actual CMS/Authenticode signature verification or GUI
+smoke. A later reviewed implementation must bind a real approved product
+config and package ID to the protected build and signing evidence before
+the protected workflow can pass. Do not publish either a production tag
+or an unsigned/test-signed setup based solely on this change.
