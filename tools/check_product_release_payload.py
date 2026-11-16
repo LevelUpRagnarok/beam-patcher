@@ -56,11 +56,16 @@ def non_test_id(value: str) -> bool:
     )
 
 
+def safe_basename(value) -> bool:
+    # Match beam-core/src/patch_guard.rs::safe_basename on exact bytes.
+    return (isinstance(value, str) and 0 < len(value) < 180 and
+            value not in (".", "..") and ".." not in value and
+            not value.startswith(".") and
+            re.fullmatch(r"[A-Za-z0-9._-]+", value) is not None)
+
+
 def safe_leaf(value, extension: str) -> bool:
-    return (isinstance(value, str) and len(value) < 180 and
-            value not in (".", "..") and not any(ch in value for ch in "/\\:") and
-            value.lower().endswith(extension) and
-            not value.endswith((" ", ".")))
+    return safe_basename(value) and value.lower().endswith(extension)
 
 
 def public_https(value) -> bool:
@@ -120,8 +125,13 @@ def validate_config(config: dict, version: str) -> None:
 
     guard = patcher.get("compatibility_guard")
     require(isinstance(guard, dict), "verified client compatibility_guard required")
-    for key in ("profile_id", "region", "channel"):
-        require(nonplaceholder(guard.get(key)), "missing product guard " + key)
+    require(safe_basename(guard.get("profile_id")) and
+            nonplaceholder(guard.get("profile_id")),
+            "missing or unsafe product guard profile_id")
+    pair = (guard.get("region"), guard.get("channel"))
+    require(pair in {("levelupgt", "custom"), ("kro", "main"),
+                     ("kro", "sakray"), ("iro", "main"), ("iro", "sakray")},
+            "unsupported product guard region/channel pair")
     digest = guard.get("client_exe_sha256")
     require(isinstance(digest, str) and bool(re.fullmatch(r"[a-fA-F0-9]{64}", digest))
             and digest.lower() not in ("0" * 64, "f" * 64),
