@@ -12,6 +12,8 @@ on:
     paths:
       - "installer/windows/**"
       - "tools/verify_installer_primary.py"
+      - "tools/check_product_release_payload.py"
+      - "tools/tests/test_release_payload_gate.py"
       - "tools/check_installer_workflows.py"
       - "tools/Confirm-TurkuazTrust.ps1"
       - "tools/Test-BeamRustProtectedPrimary.ps1"
@@ -41,6 +43,8 @@ jobs:
         run: python tools/check_installer_workflows.py
       - name: Test installer proof gate negative cases
         run: python -m unittest discover -s tools/tests -p 'test_installer_distribution_policy.py' -v
+      - name: Refuse QA and unsafe product payloads in synthetic archive fixtures
+        run: python -m unittest discover -s tools/tests -p 'test_release_payload_gate.py' -v
 
   # No release/signing credentials. Exercise real PowerShell negative paths
   # on Windows so a broken trust parser blocks protected distribution.
@@ -132,6 +136,16 @@ jobs:
           & $cli describe-package --package-id levelupgt.beampatcher.qa --version 1.0.1 --channel beta --package $output --uri $uri --target (Join-Path $env:RUNNER_TEMP 'beam-rust-target') --output $manifest
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/check_rust_installer_candidate.py --package $output --manifest $manifest --payload $stage --upstream-sha $pinned --package-id levelupgt.beampatcher.qa --version 1.0.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # The currently staged package is explicitly QA-only. This hard-stop
+      # prevents a manually dispatched protected job from approving it as
+      # a signed product, even when separate trust material is provided.
+      # Replace the QA staging with a reviewed production profile and ID
+      # in a later focused PR; do not remove this guard to force a release.
+      - name: Reject QA-only Beam package before product signing
+        shell: pwsh
+        run: |
+          python tools/check_product_release_payload.py --package build/rust-primary/expected-Beam.tzpkg --expected-exe target/release/beam-patcher.exe --package-id levelupgt.beampatcher.qa --version 1.0.1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Require independent externally signed Rust primary and evidence
         shell: pwsh
