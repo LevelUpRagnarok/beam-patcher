@@ -481,3 +481,41 @@ pub async fn reset_cache(state: State<'_, AppState>) -> Result<(), String> {
     
     Ok(())
 }
+
+
+// Dosya Yolu: REPO_ROOT/beam-ui/src/commands.rs
+// Amac: Windows WebView2 asset path arizalarinda sabit, guvenli tema kaynaklari
+// Modul - Tauri read-only bundled resource adapter
+// Version: 1.0.0-candidate
+// Aciklama: Harici dosya, URL, kullanici girdisi veya config path'i okumaz.
+// Bagimli Oldugu Katman: beam-ui/public/assets/* | beam-ui/public/index.html
+//
+// NATIVE-VISUAL-ASSET-FALLBACK-001: Tauri 1 WebView2 sometimes renders
+// the bundled HTML but reports zero rules for its relative stylesheet links.
+// Keep the original theme files as the single source of truth, compile a
+// closed allowlist into the executable, and expose them read-only. The UI
+// only injects this list if its native linked styles are actually missing.
+// There is no arbitrary path, network, game or patch operation here.
+#[tauri::command]
+pub fn get_embedded_theme_assets() -> serde_json::Value {
+    serde_json::json!({
+        "styles": [
+            include_str!("../public/assets/ragnar-legacy.css"),
+            include_str!("../public/assets/ragnar-classic.css"),
+            include_str!("../public/assets/levelup-modern.css"),
+            include_str!("../public/assets/turkuaz-premium.css"),
+            include_str!("../public/assets/turkuaz-reference-restore.css")
+        ],
+        "artwork": {
+            "turkuaz-castle.svg": include_str!("../public/assets/turkuaz-castle.svg"),
+            "turkuaz-poring.svg": include_str!("../public/assets/turkuaz-poring.svg"),
+            "turkuaz-dungeon.svg": include_str!("../public/assets/turkuaz-dungeon.svg"),
+            "turkuaz-user-classic-header.svg":
+                include_str!("../public/assets/turkuaz-user-classic-header.svg"),
+            "turkuaz-user-classic-castle.svg":
+                include_str!("../public/assets/turkuaz-user-classic-castle.svg"),
+            "turkuaz-user-modern-hero.svg":
+                include_str!("../public/assets/turkuaz-user-modern-hero.svg")
+        }
+    })
+}
