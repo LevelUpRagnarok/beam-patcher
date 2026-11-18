@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamNativeClassicUi.ps1
 # Amac: Windows uzerinde gercek Beam Tauri penceresini QA modunda smoke test etmek
 # Modul - PowerShell / native UI QA
-# Version: 1.0.2-candidate
+# Version: 1.0.3-candidate
 # Aciklama: Gercek WebView2 penceresi kontrolu; oyun, patch, setup ve ag testi degildir
 # Bagimli Oldugu Katman: beam-patcher/src/main.rs | installer/windows/config.qa.yml
 
@@ -16,6 +16,94 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Path $EvidenceDirectory -Force | Out-Null
 
+function Get-BeamQaWebViewSnapshot {
+    # QA-only CDP inspection of the actual WebView2, not a browser mock.
+    # Reports theme identifiers and stylesheet state only (never config secrets).
+    $port = 9222
+    $targets = @(Invoke-RestMethod -Uri "http://127.0.0.1:$port/json" -TimeoutSec 4)
+    $page = $targets | Where-Object {
+        $_.type -eq 'page' -and $_.webSocketDebuggerUrl -and
+        $_.url -match '(?i)tauri|index\.html'
+    } | Select-Object -First 1
+    if (-not $page) { throw 'NO_TAURI_WEBVIEW2_CDP_PAGE' }
+
+    $socket = [System.Net.WebSockets.ClientWebSocket]::new()
+    $timeout = [System.Threading.CancellationTokenSource]::new()
+    $timeout.CancelAfter([TimeSpan]::FromSeconds(12))
+    try {
+        $socket.ConnectAsync([Uri]$page.webSocketDebuggerUrl, $timeout.Token).GetAwaiter().GetResult()
+        $expression = @'
+JSON.stringify((() => {
+    const cls = document.body && document.body.classList;
+    const banner = document.querySelector('.turkuaz-reference-banner');
+    const style = banner && getComputedStyle(banner);
+    const link = document.getElementById('ragnar-classic-theme-css');
+    const restore = [...document.styleSheets].some(sheet =>
+        sheet.href && sheet.href.includes('turkuaz-reference-restore.css'));
+    return {
+        ready_state: document.readyState,
+        protocol: location.protocol,
+        bridge_present: typeof window.__TAURI__ !== 'undefined',
+        qa_mode: typeof isOfflineQa !== 'undefined' && isOfflineQa,
+        config_theme: typeof lastLoadedConfig === 'undefined' ? null :
+            (lastLoadedConfig?.ui?.theme || null),
+        active_theme: typeof activeLauncherTheme === 'undefined' ?
+            null : activeLauncherTheme,
+        classic_class: !!cls && cls.contains('theme-ragnar-classic'),
+        classic_link_present: !!link,
+        classic_link_disabled: link ? link.disabled : null,
+        classic_sheet_loaded: !!(link && link.sheet),
+        reference_sheet_loaded: restore,
+        banner_display: style ? style.display : null,
+        banner_background_has_art: style ?
+            style.backgroundImage.includes('turkuaz-user-classic-header.svg') : false,
+        banner_height: banner ? Math.round(banner.getBoundingClientRect().height) : 0
+    };
+})())
+'@
+        $request = @{
+            id = 17
+            method = 'Runtime.evaluate'
+            params = @{ expression = $expression; returnByValue = $true }
+        } | ConvertTo-Json -Compress -Depth 8
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($request)
+        $segment = [ArraySegment[byte]]::new($bytes)
+        $socket.SendAsync(
+            $segment, [System.Net.WebSockets.WebSocketMessageType]::Text,
+            $true, $timeout.Token
+        ).GetAwaiter().GetResult()
+
+        $buffer = [byte[]]::new(32768)
+        for ($attempt = 0; $attempt -lt 30; $attempt++) {
+            $json = [System.Text.StringBuilder]::new()
+            do {
+                $received = $socket.ReceiveAsync(
+                    [ArraySegment[byte]]::new($buffer), $timeout.Token
+                ).GetAwaiter().GetResult()
+                if ($received.MessageType -eq [System.Net.WebSockets.WebSocketMessageType]::Close) {
+                    throw 'CDP_WEBSOCKET_CLOSED'
+                }
+                [void]$json.Append(
+                    [System.Text.Encoding]::UTF8.GetString($buffer, 0, $received.Count)
+                )
+                if ($json.Length -gt 65536) { throw 'CDP_RESPONSE_TOO_LARGE' }
+            } until ($received.EndOfMessage)
+
+            $packet = $json.ToString() | ConvertFrom-Json -Depth 20
+            if ($packet.id -ne 17) { continue }
+            if ($packet.error) { throw 'CDP_RUNTIME_EVALUATE_REJECTED' }
+            $value = $packet.result.result.value
+            if (-not $value) { throw 'CDP_RUNTIME_EMPTY_RESULT' }
+            return $value | ConvertFrom-Json -Depth 10
+        }
+        throw 'CDP_RUNTIME_RESPONSE_TIMEOUT'
+    }
+    finally {
+        $socket.Dispose()
+        $timeout.Dispose()
+    }
+}
+
 $report = [ordered]@{
     schema = 'beam-native-classic-gui-smoke.v1'
     status = 'NOT_RUN'
@@ -26,6 +114,8 @@ $report = [ordered]@{
     classic_banner_bright_samples = 0
     classic_banner_required_samples = 14
     screenshot_file = $null
+    native_dom = $null
+    native_dom_error = $null
     process_window_title = $null
     window_width = $null
     window_height = $null
@@ -48,6 +138,12 @@ try {
     $report.executable_sha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
     $report.status = 'STARTING_NATIVE_WINDOW'
 
+    # Microsoft-supported QA-only WebView2 CDP endpoint on localhost.
+    # Scope the environment variable to this child test, never production.
+    $previousWebViewArguments = [Environment]::GetEnvironmentVariable(
+        'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', 'Process'
+    )
+    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
     $child = Start-Process -FilePath $exe -ArgumentList ('--config "' + $config + '"') -WorkingDirectory (Split-Path -Parent $exe) -PassThru
     if (-not $child) { throw 'NATIVE_UI_PROCESS_DID_NOT_START' }
     $handle = [IntPtr]::Zero
@@ -121,6 +217,15 @@ public static class BeamQaUser32 {
         $report.screenshot = 'BLOCKED_BY_RUNNER_DESKTOP'
         $report.screenshot_failure = $_.Exception.Message
     }
+    try {
+        $report.native_dom = Get-BeamQaWebViewSnapshot
+        Write-Host 'BEAM_NATIVE_WEBVIEW2_DOM_DIAGNOSTIC_CAPTURED'
+    }
+    catch {
+        $report.native_dom_error = $_.Exception.Message
+        Write-Warning ('Native DOM diagnostic unavailable: ' + $report.native_dom_error)
+    }
+
     if ($report.screenshot -eq 'CAPTURED_NOT_VISUALLY_APPROVED') {
         # The first native window smoke succeeded but rendered Beam's default
         # dark UI: QA first-run folder selection blocked applyConfiguredTheme.
@@ -186,6 +291,13 @@ finally {
                 Stop-Process -Id $child.Id -Force -ErrorAction Stop
             }
         } catch { Write-Warning ('QA child cleanup: ' + $_.Exception.Message) }
+    }
+    if ($null -ne $previousWebViewArguments) {
+        [Environment]::SetEnvironmentVariable(
+            'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', $previousWebViewArguments, 'Process'
+        )
+    } else {
+        Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
     }
     $destination = Join-Path $EvidenceDirectory 'native-window-report.json'
     $report | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $destination -Encoding UTF8
