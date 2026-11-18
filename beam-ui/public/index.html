@@ -1394,12 +1394,15 @@
         }
 
         function applyConfiguredTheme(config, explicitTheme = null) {
-            // URL parameters only select the first browser preview. In Tauri,
-            // an explicit local preference overrides the deployment's UI theme.
+            // Browser URL selection only controls offline preview.
+            // In QA-only native builds the isolated config must win on initial
+            // render, regardless of a previously persisted normal theme.
+            // Manual settings clicks remain explicit and still work in QA.
             const previewChoice = previewModern ? 'levelup-modern' :
                 (previewClassic ? 'ragnar-classic' : (previewTheme ? 'ragnar-legacy' : null));
-            const requested = explicitTheme || previewChoice || safeStoredTheme() ||
-                (config?.ui?.theme || 'default');
+            const nativeQaChoice = isTauri && isOfflineQa ? config?.ui?.theme : null;
+            const requested = explicitTheme || previewChoice || nativeQaChoice ||
+                safeStoredTheme() || (config?.ui?.theme || 'default');
             const choice = allowedLauncherThemes.includes(requested) ? requested : 'default';
             activeLauncherTheme = choice;
             const legacy = choice === 'ragnar-legacy';
