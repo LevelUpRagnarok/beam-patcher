@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_turkuaz_reference_restore.py
 # Amac: Kullanici tarafindan saglanan launcher gorsellerinin orijinal referansli geri donusunu denetler
 # Modul - Python unittest
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Gercek referans resimlerinin lokal, self-contained ve sadece dekoratif olmasi
 # Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-reference-restore.css | turkuaz-user-*.svg
 
@@ -73,6 +73,19 @@ class TurkuazReferenceRestoreTests(unittest.TestCase):
         self.assertNotIn("fetch(", CSS)
         self.assertNotIn("https://", CSS)
         self.assertNotIn("http://", CSS)
+
+    def test_classic_preview_preserves_native_artwork_and_progress_tracks(self):
+        # Regression for the user-observed 1650px browser screenshot.
+        # The actual geometry/screenshot is checked by QA-THEME-BROWSER.py.
+        self.assertIn("width: min(100vw, 900px)", CSS)
+        self.assertIn("height: min(100vh, 620px)", CSS)
+        self.assertIn("flex: 0 0 min(16.45vw, 148px)", CSS)
+        self.assertIn("turkuaz-user-classic-header.svg') center center / 100% auto", CSS)
+        self.assertIn("turkuaz-user-classic-castle.svg') right center / auto 100%", CSS)
+        self.assertIn("overflow: visible; /* premium.css clipped", CSS)
+        self.assertIn("top: calc(100% + 5px)", CSS)
+        self.assertNotIn("turkuaz-user-classic-castle.svg') center 43% / cover", CSS)
+        self.assertNotIn("turkuaz-user-classic-header.svg') center bottom / cover", CSS)
 
     def test_reference_graphics_have_accessible_labels(self):
         self.assertRegex(HTML, r'class="turkuaz-reference-banner"[^>]*role="img"')
