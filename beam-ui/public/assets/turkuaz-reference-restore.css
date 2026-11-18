@@ -306,7 +306,7 @@ body.theme-levelup-modern .btn-play-now {
     body.theme-ragnar-classic .button-row {
         grid-template-columns: 25px 62px;
         grid-template-rows: repeat(3, 24px);
-        gap: 2px 5px;
+        gap: 2px 8px;
     }
     body.theme-ragnar-classic .button-row .btn-action-small {
         width: 24px;
