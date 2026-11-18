@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/beam-ui/public/assets/turkuaz-reference-restore.css
 Amac: Kullanicinin orijinal iki launcher konseptini Turkuaz Klasik ve Modern temalara geri koymak
 Modul - CSS opt-in visual restore
-Version: 1.0.5-candidate
+Version: 1.0.6-candidate
 Aciklama: Referans gorsellerini dekoratif artwork olarak kullanir; gercek button, haber,
 update, native QA guard, cache, oyun islemleri CSS ile taklit edilmez.
 Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-user-*.svg | turkuaz-premium.css
@@ -185,6 +185,8 @@ body.theme-ragnar-classic .button-row {
     animation: none;
 }
 body.theme-ragnar-classic .button-row .btn-play-now {
+    /* Prevent the default->classic height transition crossing the utility rail. */
+    transition: none;
     grid-column: 2;
     grid-row: 1 / 4;
     justify-self: center;
@@ -194,6 +196,7 @@ body.theme-ragnar-classic .button-row .btn-play-now {
     height: 82px;
 }
 body.theme-ragnar-classic .button-row .btn-action-small {
+    transition: none;
     position: static;
     top: auto;
     right: auto;
