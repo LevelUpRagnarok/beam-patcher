@@ -402,7 +402,7 @@ def run(output_dir, source_sha):
                     "Classic controls are not placed in the same grid")
             require(buttons["row"]["width"] > 0 and
                     buttons["play"]["left"] - max(t["right"] for t in buttons["tools"]) >= 7,
-                    "Classic action tools overlap or touch circular play button")
+                    f"Classic action tools overlap/touch play at {viewport}: {buttons}")
             require(all(buttons["tools"][i]["bottom"] + 1 <=
                         buttons["tools"][i + 1]["top"] for i in (0, 1)),
                     "Classic action tools overlap vertically")
