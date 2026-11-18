@@ -47,6 +47,7 @@ pub fn run_ui(config: Config) -> Result<()> {
             commands::exchange_sso_code,
             commands::launch_game,
             commands::get_config,
+            commands::get_embedded_theme_assets,
             commands::get_progress,
             commands::get_news,
             commands::get_server_status,
