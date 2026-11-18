@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/beam-ui/public/assets/turkuaz-reference-restore.css
 Amac: Kullanicinin orijinal iki launcher konseptini Turkuaz Klasik ve Modern temalara geri koymak
 Modul - CSS opt-in visual restore
-Version: 1.0.0-candidate
+Version: 1.0.1-candidate
 Aciklama: Referans gorsellerini dekoratif artwork olarak kullanir; gercek button, haber,
 update, native QA guard, cache, oyun islemleri CSS ile taklit edilmez.
 Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-user-*.svg | turkuaz-premium.css
@@ -16,8 +16,17 @@ Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-user-*.svg | turkuaz-
    white 1536x1024 launcher reference, instead of synthesizing a logo in CSS. */
 body.theme-ragnar-classic {
     background: #ecf4fc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+/* The original launcher is a 900x620 composition. In a maximized browser,
+   keep native pixel scale instead of stretching small cropped artwork. */
 body.theme-ragnar-classic .patcher-container {
+    width: min(100vw, 900px);
+    height: min(100vh, 620px);
+    flex: 0 1 auto;
+    margin: auto;
     border: 2px solid #adc7dc;
     border-radius: 12px;
     overflow: hidden;
@@ -39,10 +48,11 @@ body.theme-ragnar-classic .logo-text {
 }
 body.theme-ragnar-classic .turkuaz-reference-banner {
     display: block;
-    flex: 0 0 128px;
+    /* The user artwork is 1080x178, so use its native aspect ratio. */
+    flex: 0 0 min(16.45vw, 148px);
     min-height: 0;
     position: relative;
-    background: #d6ecf8 url('turkuaz-user-classic-header.svg') center bottom / cover no-repeat;
+    background: #d6ecf8 url('turkuaz-user-classic-header.svg') center center / 100% auto no-repeat;
     border-bottom: 3px solid #b9d6e9;
     box-shadow: inset 0 -3px 0 #ffffff88;
     pointer-events: none;
@@ -83,9 +93,13 @@ body.theme-ragnar-classic .classic-ad-card {
 body.theme-ragnar-classic .classic-ad-card span { font-size: 14px; }
 body.theme-ragnar-classic .classic-ad-card small { font-size: 9px; }
 body.theme-ragnar-classic .news-section-main {
+    /* Never enlarge the narrow user crop across the entire news panel.
+       Keep the castle on the right at its natural height-ratio and let
+       the navy background support the actual news controls on the left. */
     background:
-        linear-gradient(180deg,rgba(14,23,45,.21),rgba(10,18,38,.45) 53%,rgba(5,14,30,.85)),
-        url('turkuaz-user-classic-castle.svg') center 43% / cover no-repeat;
+        linear-gradient(90deg,rgba(8,20,40,.92),rgba(8,20,40,.6) 43%,rgba(8,20,40,.08) 80%),
+        url('turkuaz-user-classic-castle.svg') right center / auto 100% no-repeat,
+        linear-gradient(135deg,#133454,#447395);
     border: 1px solid #c9b18b;
     border-radius: 7px;
     box-shadow: 0 4px 13px #17345b32, inset 0 0 0 3px #fff3;
@@ -136,7 +150,22 @@ body.theme-ragnar-classic .progress-section {
     height: 100%;
     padding: 0 7px;
 }
-body.theme-ragnar-classic .progress-bar-container { margin-bottom: 18px; }
+body.theme-ragnar-classic .progress-bar-container {
+    position: relative;
+    overflow: visible; /* premium.css clipped the decorative second rail */
+    margin-bottom: 18px;
+}
+body.theme-ragnar-classic .progress-bar-container::before {
+    top: calc(100% + 5px);
+    bottom: auto;
+    height: 11px;
+    border-radius: 3px;
+    background: repeating-linear-gradient(115deg,
+        #8eddd5 0 12px, #dfb6ee 12px 24px,
+        #e9d9a0 24px 36px, #8fd8ae 36px 48px);
+    box-shadow: inset 0 0 0 1px #a7bac3;
+    animation: none;
+}
 body.theme-ragnar-classic .btn-play-now {
     width: 82px;
     height: 82px;
@@ -206,7 +235,6 @@ body.theme-levelup-modern .btn-play-now {
 /* Default & nostalgia keep their own appearance and actual four-card artwork.
    No mock news/server values, dead click targets or rasterized controls. */
 @media (max-width: 760px) {
-    body.theme-ragnar-classic .turkuaz-reference-banner { flex-basis: 96px; }
     body.theme-ragnar-classic .top-grid { gap: 5px; }
     body.theme-ragnar-classic .progress-section {
         grid-template-columns: 108px minmax(0,1fr) 98px;
