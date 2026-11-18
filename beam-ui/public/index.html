@@ -1171,9 +1171,9 @@
         .grid-image-item.is-image-missing img { display: none !important; }
     </style>
     <!-- Explicit opt-in only: preserves the existing Beam appearance by default. -->
-    <link id="ragnar-legacy-theme-css" rel="stylesheet" href="assets/ragnar-legacy.css" disabled>
-    <link id="ragnar-classic-theme-css" rel="stylesheet" href="assets/ragnar-classic.css" disabled>
-    <link id="levelup-modern-theme-css" rel="stylesheet" href="assets/levelup-modern.css" disabled>
+    <link id="ragnar-legacy-theme-css" rel="stylesheet" href="assets/ragnar-legacy.css">
+    <link id="ragnar-classic-theme-css" rel="stylesheet" href="assets/ragnar-classic.css">
+    <link id="levelup-modern-theme-css" rel="stylesheet" href="assets/levelup-modern.css">
     <!-- Shared visual finishing layer; theme IDs and native actions are unchanged. -->
     <link rel="stylesheet" href="assets/turkuaz-premium.css">
     <!-- Reference restoration layer: scoped to Turkuaz Klasik / Modern visual themes. -->
@@ -1408,12 +1408,10 @@
             const legacy = choice === 'ragnar-legacy';
             const classic = choice === 'ragnar-classic';
             const modern = choice === 'levelup-modern';
-            const sheet = document.getElementById('ragnar-legacy-theme-css');
-            const classicSheet = document.getElementById('ragnar-classic-theme-css');
-            const modernSheet = document.getElementById('levelup-modern-theme-css');
-            if (sheet) sheet.disabled = !legacy;
-            if (classicSheet) classicSheet.disabled = !classic;
-            if (modernSheet) modernSheet.disabled = !modern;
+            // All opt-in theme sheets are preloaded as ordinary stylesheets.
+            // Each theme selector is scoped to body.theme-*; switching only
+            // toggles the body classes. WebView2 need not fetch a previously
+            // disabled link after startup, which hid Classic on native QA.
             document.body.classList.toggle('theme-ragnar-legacy', legacy);
             document.body.classList.toggle('theme-ragnar-classic', classic);
             document.body.classList.toggle('theme-levelup-modern', modern);
