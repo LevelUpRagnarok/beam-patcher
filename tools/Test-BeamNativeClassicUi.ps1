@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamNativeClassicUi.ps1
 # Amac: Windows uzerinde gercek Beam Tauri penceresini QA modunda smoke test etmek
 # Modul - PowerShell / native UI QA
-# Version: 1.0.0-candidate
+# Version: 1.0.1-candidate
 # Aciklama: Gercek WebView2 penceresi kontrolu; oyun, patch, setup ve ag testi degildir
 # Bagimli Oldugu Katman: beam-patcher/src/main.rs | installer/windows/config.qa.yml
 
@@ -22,6 +22,7 @@ $report = [ordered]@{
     source = 'real Windows Tauri/WebView2 process'
     qa_only = $false
     screenshot = 'NOT_ATTEMPTED'
+    classic_banner_verified = $false
     screenshot_file = $null
     process_window_title = $null
     window_width = $null
@@ -117,6 +118,41 @@ public static class BeamQaUser32 {
         # desktop; a real native HWND still proves the app was launched.
         $report.screenshot = 'BLOCKED_BY_RUNNER_DESKTOP'
         $report.screenshot_failure = $_.Exception.Message
+    }
+    if ($report.screenshot -eq 'CAPTURED_NOT_VISUALLY_APPROVED') {
+        # The first native window smoke succeeded but rendered Beam's default
+        # dark UI: QA first-run folder selection blocked applyConfiguredTheme.
+        # Refuse a false success until the user-supplied bright classic
+        # banner is actually visible in the screenshot pixels.
+        for ($attempt = 0; $attempt -lt 10; $attempt++) {
+            $bitmap = [System.Drawing.Bitmap]::FromFile($out)
+            try {
+                $sample = $bitmap.GetPixel([int]($width / 2), [int]($height * 0.16))
+                $report.banner_sample_rgb = @($sample.R, $sample.G, $sample.B)
+                if ($sample.R -ge 90 -and $sample.G -ge 100 -and $sample.B -ge 135) {
+                    $report.classic_banner_verified = $true
+                    break
+                }
+            }
+            finally { $bitmap.Dispose() }
+            Start-Sleep -Seconds 2
+            $frame = [System.Drawing.Bitmap]::new($width, $height)
+            try {
+                $canvas = [System.Drawing.Graphics]::FromImage($frame)
+                try {
+                    $canvas.CopyFromScreen($rect.Left, $rect.Top, 0, 0,
+                        [System.Drawing.Size]::new($width, $height))
+                }
+                finally { $canvas.Dispose() }
+                $frame.Save($out, [System.Drawing.Imaging.ImageFormat]::Png)
+            }
+            finally { $frame.Dispose() }
+        }
+        if (-not $report.classic_banner_verified) {
+            $report.screenshot = 'CAPTURED_WRONG_THEME'
+            throw 'NATIVE_UI_CLASSIC_BANNER_NOT_RENDERED_AFTER_STARTUP'
+        }
+        $report.screenshot = 'CAPTURED_CLASSIC_BANNER_VERIFIED'
     }
     Write-Host 'BEAM_NATIVE_CLASSIC_WINDOW_OPENED_QA_ONLY'
 }
