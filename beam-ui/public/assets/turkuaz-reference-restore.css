@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/beam-ui/public/assets/turkuaz-reference-restore.css
 Amac: Kullanicinin orijinal iki launcher konseptini Turkuaz Klasik ve Modern temalara geri koymak
 Modul - CSS opt-in visual restore
-Version: 1.0.1-candidate
+Version: 1.0.2-candidate
 Aciklama: Referans gorsellerini dekoratif artwork olarak kullanir; gercek button, haber,
 update, native QA guard, cache, oyun islemleri CSS ile taklit edilmez.
 Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-user-*.svg | turkuaz-premium.css
@@ -80,6 +80,8 @@ body.theme-ragnar-classic .top-grid {
     height: auto;
     min-height: 0;
     gap: 9px;
+    /* The source composition has a wider three-promo rail and right cards. */
+    grid-template-columns: 168px minmax(0, 1fr) 160px;
 }
 body.theme-ragnar-classic .classic-ad-rail {
     gap: 8px;
@@ -97,7 +99,7 @@ body.theme-ragnar-classic .news-section-main {
        Keep the castle on the right at its natural height-ratio and let
        the navy background support the actual news controls on the left. */
     background:
-        linear-gradient(90deg,rgba(8,20,40,.92),rgba(8,20,40,.6) 43%,rgba(8,20,40,.08) 80%),
+        linear-gradient(90deg,rgba(8,20,40,.84),rgba(8,20,40,.48) 43%,rgba(8,20,40,.05) 80%),
         url('turkuaz-user-classic-castle.svg') right center / auto 100% no-repeat,
         linear-gradient(135deg,#133454,#447395);
     border: 1px solid #c9b18b;
@@ -146,7 +148,7 @@ body.theme-ragnar-classic .bottom-section {
 }
 body.theme-ragnar-classic .progress-section {
     grid-template-rows: 42px 19px 40px;
-    grid-template-columns: 148px minmax(0,1fr) 142px;
+    grid-template-columns: 168px minmax(0,1fr) 160px;
     height: 100%;
     padding: 0 7px;
 }
@@ -182,6 +184,36 @@ body.theme-ragnar-classic .btn-play-now:hover:not(:disabled) {
 body.theme-ragnar-classic .btn-action-small {
     background: linear-gradient(#ffe7a2,#a76d08);
     border: 1px solid #926414;
+    color: #563d13;
+}
+/* Local icon fallback: Phosphor's optional CDN is unavailable offline.
+   Render the native, clickable gear/folder/reset buttons even without it. */
+body.theme-ragnar-classic .btn-action-small > i { display: none; }
+body.theme-ragnar-classic .btn-action-small::after {
+    display: block;
+    color: #533500;
+    font: 700 16px/1 Arial, sans-serif;
+    text-shadow: 0 1px #fff5cc;
+}
+body.theme-ragnar-classic #theme-settings-open::after { content: '⚙'; }
+body.theme-ragnar-classic .btn-action-small[title='Manual Patch']::after {
+    content: '▣';
+}
+body.theme-ragnar-classic .btn-action-small[title='Reset Cache']::after {
+    content: '↻';
+}
+/* Preserve the original two narrow right-side promotional panels. */
+body.theme-ragnar-classic .grid-image-item::after {
+    padding: 20px 6px 8px;
+    text-align: left;
+    font: 800 10px/1.2 Arial, sans-serif;
+    letter-spacing: .15px;
+}
+body.theme-ragnar-classic .grid-image-item:nth-child(1)::after {
+    content: 'OVERLOOK ZİNDANI';
+}
+body.theme-ragnar-classic .grid-image-item:nth-child(2)::after {
+    content: 'ETKİNLİK GÖRSELLERİ';
 }
 body.theme-ragnar-classic.theme-preview-only .btn-play-now {
     cursor: not-allowed;
@@ -235,7 +267,13 @@ body.theme-levelup-modern .btn-play-now {
 /* Default & nostalgia keep their own appearance and actual four-card artwork.
    No mock news/server values, dead click targets or rasterized controls. */
 @media (max-width: 760px) {
-    body.theme-ragnar-classic .top-grid { gap: 5px; }
+    body.theme-ragnar-classic .top-grid {
+        gap: 5px;
+        grid-template-columns: 108px minmax(0, 1fr) 98px;
+    }
+    body.theme-ragnar-classic .progress-section {
+        grid-template-columns: 108px minmax(0, 1fr) 98px;
+    }
     body.theme-ragnar-classic .progress-section {
         grid-template-columns: 108px minmax(0,1fr) 98px;
     }
