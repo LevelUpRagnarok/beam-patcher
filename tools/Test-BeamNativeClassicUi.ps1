@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamNativeClassicUi.ps1
 # Amac: Windows uzerinde gercek Beam Tauri penceresini QA modunda smoke test etmek
 # Modul - PowerShell / native UI QA
-# Version: 1.0.1-candidate
+# Version: 1.0.2-candidate
 # Aciklama: Gercek WebView2 penceresi kontrolu; oyun, patch, setup ve ag testi degildir
 # Bagimli Oldugu Katman: beam-patcher/src/main.rs | installer/windows/config.qa.yml
 
@@ -23,6 +23,8 @@ $report = [ordered]@{
     qa_only = $false
     screenshot = 'NOT_ATTEMPTED'
     classic_banner_verified = $false
+    classic_banner_bright_samples = 0
+    classic_banner_required_samples = 14
     screenshot_file = $null
     process_window_title = $null
     window_width = $null
@@ -127,9 +129,24 @@ public static class BeamQaUser32 {
         for ($attempt = 0; $attempt -lt 10; $attempt++) {
             $bitmap = [System.Drawing.Bitmap]::FromFile($out)
             try {
-                $sample = $bitmap.GetPixel([int]($width / 2), [int]($height * 0.16))
-                $report.banner_sample_rgb = @($sample.R, $sample.G, $sample.B)
-                if ($sample.R -ge 90 -and $sample.G -ge 100 -and $sample.B -ge 135) {
+                # One bright pixel near a news filter was previously counted as
+                # evidence of the illustrated Classic banner (false PASS).
+                # Require a large distributed bright region across the upper
+                # 35%-to-85% of the 900px canvas; the dark default theme cannot
+                # satisfy this. Only the captured native HWND is sampled.
+                $brightCount = 0
+                foreach ($yRatio in @(0.11, 0.16, 0.21, 0.26)) {
+                    foreach ($xRatio in @(0.08, 0.21, 0.34, 0.47, 0.60, 0.73, 0.86)) {
+                        $sample = $bitmap.GetPixel([int]($width * $xRatio), [int]($height * $yRatio))
+                        if ($sample.R -ge 105 -and $sample.G -ge 105 -and
+                            $sample.B -ge 120 -and
+                            ($sample.R + $sample.G + $sample.B) -ge 410) {
+                            $brightCount++
+                        }
+                    }
+                }
+                $report.classic_banner_bright_samples = $brightCount
+                if ($brightCount -ge $report.classic_banner_required_samples) {
                     $report.classic_banner_verified = $true
                     break
                 }
