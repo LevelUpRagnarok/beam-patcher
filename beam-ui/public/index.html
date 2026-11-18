@@ -2098,7 +2098,10 @@
                 document.getElementById('play-button').disabled = true;
             }
 
-            const needsSetup = await invoke('check_initial_setup');
+            // QA intentionally has no game directory. Do not interrupt first
+            // render with a native folder picker that blocks theme application.
+            // Test workspace selection remains available from the gear menu.
+            const needsSetup = !isOfflineQa && await invoke('check_initial_setup');
             if (needsSetup && isTauri) {
                 config = await promptGameDirectorySelection();
             }
