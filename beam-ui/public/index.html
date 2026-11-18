@@ -2116,6 +2116,35 @@
             
             lastLoadedConfig = config;
             applyConfiguredTheme(config);
+            // QA_DIAGNOSTIC_ONLY: browser CDP is unavailable on some hosted
+            // WebView2 runners. Show public theme/style flags in the QA
+            // screenshot so the next native failure has actionable evidence.
+            // Never render this debug strip for a production configuration.
+            if (isOfflineQa) {
+                const diagnostic = document.createElement('output');
+                diagnostic.id = 'qa-native-theme-diagnostic';
+                diagnostic.style.cssText =
+                    'position:fixed;left:8px;bottom:1px;z-index:2147483646;' +
+                    'max-width:98vw;padding:3px 7px;background:#fffbd5;' +
+                    'color:#172038;font:700 12px/1.3 monospace;' +
+                    'white-space:nowrap;pointer-events:none;';
+                document.body.appendChild(diagnostic);
+                const updateDiagnostic = () => {
+                    const link = document.getElementById('ragnar-classic-theme-css');
+                    const banner = document.querySelector('.turkuaz-reference-banner');
+                    const style = banner && getComputedStyle(banner);
+                    diagnostic.textContent =
+                        'QA VIEW: config=' + String(config?.ui?.theme) +
+                        ' selected=' + activeLauncherTheme +
+                        ' classicClass=' + document.body.classList.contains('theme-ragnar-classic') +
+                        ' cssDisabled=' + String(link?.disabled) +
+                        ' cssLoaded=' + Boolean(link?.sheet) +
+                        ' refDisplay=' + String(style?.display) +
+                        ' bg=' + String(style?.backgroundImage?.includes('turkuaz-user-classic-header.svg'));
+                };
+                updateDiagnostic();
+                setTimeout(updateDiagnostic, 1000);
+            }
             if (config.app.server_name) {
                 document.getElementById('logo-text').textContent = config.app.server_name;
             }
