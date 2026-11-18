@@ -2118,7 +2118,7 @@
             let css = bundle.styles.join('\n');
             for (const [name, svg] of Object.entries(bundle.artwork || {})) {
                 if (!/^turkuaz-[a-z0-9-]+\.svg$/.test(name) ||
-                    typeof svg !== 'string' || !svg.startsWith('<svg')) {
+                    typeof svg !== 'string' || !svg.includes('<svg')) {
                     throw new Error('NATIVE_THEME_ASSET_INVALID');
                 }
                 const dataUrl = 'url("data:image/svg+xml;charset=utf-8,' +
