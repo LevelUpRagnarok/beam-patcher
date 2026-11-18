@@ -123,6 +123,7 @@ $report = [ordered]@{
     failure = $null
 }
 $child = $null
+$previousWebViewArguments = $null
 
 try {
     $exe = (Resolve-Path -LiteralPath $ExecutablePath).Path
