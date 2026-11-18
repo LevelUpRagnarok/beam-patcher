@@ -28,7 +28,7 @@ class LevelupModernThemeTests(unittest.TestCase):
         self.assertIn("option.setAttribute('aria-pressed',", HTML)
         self.assertIn('class="theme-gallery" role="group"', HTML)
         self.assertIn(".modern-nav, .modern-hero, .classic-ad-rail { display: none; }", HTML)
-        self.assertIn('href="assets/levelup-modern.css" disabled>', HTML)
+        self.assertIn('href="assets/levelup-modern.css">', HTML)
         self.assertIn("if (modernSheet) modernSheet.disabled = !modern", HTML)
         self.assertIn("const isThemePreview = !isTauri;", HTML)
         self.assertIn("const previewModern = !isTauri &&", HTML)
