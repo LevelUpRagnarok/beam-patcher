@@ -1372,7 +1372,9 @@
             new URLSearchParams(window.location.search).get('theme') === 'ragnar-classic';
         const previewModern = !isTauri &&
             new URLSearchParams(window.location.search).get('theme') === 'levelup-modern';
-        const isThemePreview = previewTheme || previewClassic || previewModern;
+        // Any standalone browser session is a visual preview, even without
+        // a theme= query. Never display an actionable Play/Patch control there.
+        const isThemePreview = !isTauri;
         const allowedLauncherThemes = Object.freeze([
             'default', 'ragnar-legacy', 'ragnar-classic', 'levelup-modern'
         ]);
