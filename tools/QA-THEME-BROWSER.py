@@ -422,7 +422,7 @@ def run(output_dir, source_sha):
                     f"Classic action tools overlap/touch play at {viewport}: {buttons}")
             require(all(buttons["tools"][i]["bottom"] + 1 <=
                         buttons["tools"][i + 1]["top"] for i in (0, 1)),
-                    "Classic action tools overlap vertically")
+                    f"Classic action tools overlap vertically at {viewport}: {buttons}")
             require(buttons["play"]["right"] <= buttons["row"]["right"] + 1 and
                     buttons["play"]["left"] >= buttons["row"]["left"] - 1,
                     "Classic play button overflows action grid")
