@@ -1408,10 +1408,17 @@
             const legacy = choice === 'ragnar-legacy';
             const classic = choice === 'ragnar-classic';
             const modern = choice === 'levelup-modern';
-            // All opt-in theme sheets are preloaded as ordinary stylesheets.
-            // Each theme selector is scoped to body.theme-*; switching only
-            // toggles the body classes. WebView2 need not fetch a previously
-            // disabled link after startup, which hid Classic on native QA.
+            // Load all opt-in sheets during initial HTML parse. WebView2
+            // may not fetch a link first introduced with the HTML disabled
+            // attribute. After preloading, the existing theme toggle can
+            // safely disable unselected sheets without changing preference
+            // or game/update behavior.
+            const sheet = document.getElementById('ragnar-legacy-theme-css');
+            const classicSheet = document.getElementById('ragnar-classic-theme-css');
+            const modernSheet = document.getElementById('levelup-modern-theme-css');
+            if (sheet) sheet.disabled = !legacy;
+            if (classicSheet) classicSheet.disabled = !classic;
+            if (modernSheet) modernSheet.disabled = !modern;
             document.body.classList.toggle('theme-ragnar-legacy', legacy);
             document.body.classList.toggle('theme-ragnar-classic', classic);
             document.body.classList.toggle('theme-levelup-modern', modern);
