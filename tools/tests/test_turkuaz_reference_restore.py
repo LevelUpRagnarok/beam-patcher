@@ -87,6 +87,15 @@ class TurkuazReferenceRestoreTests(unittest.TestCase):
         self.assertNotIn("turkuaz-user-classic-castle.svg') center 43% / cover", CSS)
         self.assertNotIn("turkuaz-user-classic-header.svg') center bottom / cover", CSS)
 
+    def test_native_qa_skips_first_run_folder_picker_before_theme(self):
+        # Regression: real QA Tauri screenshot was default-dark because a
+        # blocking folder dialog ran before applyConfiguredTheme(config).
+        self.assertIn(
+            "const needsSetup = !isOfflineQa && await invoke('check_initial_setup');", HTML
+        )
+        self.assertIn("applyConfiguredTheme(config);", HTML)
+        self.assertIn("const isThemePreview = !isTauri;", HTML)
+
     def test_reference_graphics_have_accessible_labels(self):
         self.assertRegex(HTML, r'class="turkuaz-reference-banner"[^>]*role="img"')
         self.assertIn("aria-label=\"Turkuaz Ragnarok Online\"", HTML)
