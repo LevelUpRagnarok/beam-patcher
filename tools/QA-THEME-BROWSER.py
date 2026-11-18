@@ -337,6 +337,12 @@ def run(output_dir, source_sha):
         qa_page.wait_for_function("document.getElementById('play-button')?.textContent === 'QA / Oyun Kapalı'",
                                   timeout=15000)
         require(qa_page.locator("#play-button").is_disabled(), "QA Play action should be disabled")
+        require(qa_page.locator("#theme-settings-choice").input_value() == "ragnar-legacy",
+                "Native-like QA never applied its configured visual theme")
+        require(
+            qa_page.evaluate("() => !window.__QA_NATIVE_CALLS.includes('check_initial_setup')"),
+            "Native-like QA still prompts for a game folder before theme rendering",
+        )
         qa_page.locator("#theme-settings-open").click()
         require(qa_page.locator("#qa-workspace-select").is_visible(),
                 "QA folder selection must be accessible from Settings")
