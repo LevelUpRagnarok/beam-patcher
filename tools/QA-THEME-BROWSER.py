@@ -2,7 +2,7 @@
 # Dosya Yolu: tools/QA-THEME-BROWSER.py
 # Amac: Dort Beam tema gorunumunu gercek Chromium uzerinde offline smoke ile dogrular
 # Modul - Python / Playwright / Visual QA
-# Version: 0.3.1-candidate
+# Version: 0.3.2-candidate
 # Aciklama: Yerel dosyalardan render; Tauri komutlari salt okunur test doubles; oyun/patch yok
 # Bagimli Oldugu Katman: beam-ui/public/index.html | assets/*.css | browser QA
 
@@ -288,6 +288,9 @@ def run(output_dir, source_sha):
                 require(layout["progressOverflow"] == "visible" and
                         layout["secondRail"] not in ("none", "normal"),
                         "Classic second decorative progress rail is hidden")
+                require(160 <= layout["left"]["width"] <= 174 and
+                        154 <= layout["right"]["width"] <= 164,
+                        "Classic promo columns no longer match the reference")
                 for panel in ("left", "news", "right", "start"):
                     rect = layout[panel]
                     require(rect["width"] > 35 and rect["height"] > 35 and
@@ -348,6 +351,46 @@ def run(output_dir, source_sha):
             "QA build unexpectedly queried patch feed",
         )
         qa_context.close()
+
+        # Standalone file:// / localhost browsing has no native backend,
+        # even when the user omits ?theme=. Keep Play, Patch and Setup inert.
+        standalone = browser.new_context(viewport={"width": 900, "height": 620})
+        raw_page = standalone.new_page()
+        raw_page.route("**/*", route)
+        raw_page.goto(preview_url + "?theme=ragnar-classic",
+                      wait_until="domcontentloaded", timeout=30000)
+        raw_page.wait_for_function("""() => {
+            const p = document.querySelector('#play-button');
+            return p?.disabled && p.textContent.trim() === 'Preview Only' &&
+                document.body.classList.contains('theme-ragnar-classic') &&
+                document.body.classList.contains('theme-preview-only');
+        }""", timeout=10000)
+        require(raw_page.locator("#theme-settings-open").is_enabled(),
+                "Standalone theme selector was disabled")
+        require(raw_page.locator("#theme-game-setup").is_disabled(),
+                "Standalone browser exposed real game settings")
+        require(raw_page.locator(".btn-action-small[title='Manual Patch']").is_disabled(),
+                "Standalone browser exposed patch command")
+        icons = raw_page.evaluate("""() => Array.from(
+            document.querySelectorAll('.btn-action-small')
+        ).map(el => getComputedStyle(el, '::after').content)""")
+        require(len(icons) == 3 and all(icon not in ("none", "normal", '""') for icon in icons),
+                "Classic offline button glyphs are missing")
+        direct_preview = output_dir / "ragnar-classic-browser-preview.png"
+        raw_page.screenshot(path=str(direct_preview), animations="disabled")
+        require(direct_preview.stat().st_size > 5000,
+                "Standalone screenshot unexpectedly small")
+        browser_preview_artifact = {
+            "file": direct_preview.name, "sha256": digest(direct_preview),
+            "bytes": direct_preview.stat().st_size
+        }
+        raw_page.goto(preview_url, wait_until="domcontentloaded", timeout=30000)
+        raw_page.wait_for_function("""() => {
+            const p = document.querySelector('#play-button');
+            return p?.disabled && p.textContent.trim() === 'Preview Only' &&
+                document.body.classList.contains('theme-preview-only');
+        }""", timeout=10000)
+        standalone.close()
         browser.close()
 
     summary = {
@@ -363,6 +406,8 @@ def run(output_dir, source_sha):
         "external_requests_blocked": len(blocked),
         "screenshots": artifacts,
         "classic_maximized_browser": classic_wide_artifact,
+        "classic_standalone_browser": browser_preview_artifact,
+        "standalone_browser_without_query_blocks_game": True,
         "desktop_webview2": "NOT RUN",
         "actual_gameplay": "NOT RUN",
         "published": False,
