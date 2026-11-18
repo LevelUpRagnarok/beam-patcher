@@ -2,7 +2,7 @@
 # Dosya Yolu: tools/QA-THEME-BROWSER.py
 # Amac: Dort Beam tema gorunumunu gercek Chromium uzerinde offline smoke ile dogrular
 # Modul - Python / Playwright / Visual QA
-# Version: 0.3.0-candidate
+# Version: 0.3.1-candidate
 # Aciklama: Yerel dosyalardan render; Tauri komutlari salt okunur test doubles; oyun/patch yok
 # Bagimli Oldugu Katman: beam-ui/public/index.html | assets/*.css | browser QA
 
@@ -248,6 +248,64 @@ def run(output_dir, source_sha):
             artifacts.append({"theme": theme, "file": screenshot.name, "sha256": digest(screenshot),
                               "bytes": screenshot.stat().st_size})
 
+            if theme == "ragnar-classic":
+                # User screenshot regression: maximized desktop browser must not
+                # stretch the original 900x620 launcher/artwork to 1650x900.
+                page.set_viewport_size({"width": 1650, "height": 900})
+                layout = page.evaluate("""() => {
+                    const box = (selector) => {
+                        const r = document.querySelector(selector).getBoundingClientRect();
+                        return {x:r.x, y:r.y, width:r.width, height:r.height,
+                                right:r.right, bottom:r.bottom};
+                    };
+                    const news = document.querySelector('.news-section-main');
+                    const progress = document.querySelector('.progress-bar-container');
+                    return {
+                        launcher: box('.patcher-container'),
+                        banner: box('.turkuaz-reference-banner'),
+                        left: box('.classic-ad-rail'),
+                        news: box('.news-section-main'),
+                        right: box('.image-grid-section'),
+                        start: box('#play-button'),
+                        bannerScale: getComputedStyle(
+                            document.querySelector('.turkuaz-reference-banner')).backgroundSize,
+                        sceneScale: getComputedStyle(news).backgroundSize,
+                        progressOverflow: getComputedStyle(progress).overflow,
+                        secondRail: getComputedStyle(progress, '::before').content
+                    };
+                }""")
+                outer = layout["launcher"]
+                require(abs(outer["width"] - 900) <= 2 and
+                        abs(outer["height"] - 620) <= 2,
+                        "Classic launcher stretched beyond reference size")
+                require(abs(outer["x"] - 375) <= 3 and abs(outer["y"] - 140) <= 3,
+                        "Classic launcher not centered in maximized browser")
+                require(125 <= layout["banner"]["height"] <= 155 and
+                        layout["bannerScale"] == "100% auto",
+                        "Classic illustrated header aspect ratio/crop regression")
+                require("auto 100%" in layout["sceneScale"],
+                        "Classic castle is being blown up via cover")
+                require(layout["progressOverflow"] == "visible" and
+                        layout["secondRail"] not in ("none", "normal"),
+                        "Classic second decorative progress rail is hidden")
+                for panel in ("left", "news", "right", "start"):
+                    rect = layout[panel]
+                    require(rect["width"] > 35 and rect["height"] > 35 and
+                            rect["x"] >= outer["x"] - 3 and
+                            rect["right"] <= outer["right"] + 3 and
+                            rect["y"] >= outer["y"] - 3 and
+                            rect["bottom"] <= outer["bottom"] + 3,
+                            "Classic panel clipped outside launcher: " + panel)
+                wide = output_dir / "ragnar-classic-maximized-browser.png"
+                page.screenshot(path=str(wide), animations="disabled")
+                require(wide.stat().st_size > 5000,
+                        "Maximized-browser screenshot unexpectedly small")
+                classic_wide_artifact = {
+                    "file": wide.name, "sha256": digest(wide), "bytes": wide.stat().st_size,
+                    "viewport": {"width": 1650, "height": 900}, "layout": layout
+                }
+                page.set_viewport_size({"width": 900, "height": 620})
+
         page.reload(wait_until="domcontentloaded")
         page.wait_for_function("document.body.classList.contains('theme-levelup-modern')")
         require(page.locator("#theme-settings-choice").input_value() == "levelup-modern",
@@ -304,6 +362,7 @@ def run(output_dir, source_sha):
         "qa_ui_blocks_play_and_patch_feed": True,
         "external_requests_blocked": len(blocked),
         "screenshots": artifacts,
+        "classic_maximized_browser": classic_wide_artifact,
         "desktop_webview2": "NOT RUN",
         "actual_gameplay": "NOT RUN",
         "published": False,
