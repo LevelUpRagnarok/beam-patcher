@@ -376,6 +376,40 @@ def run(output_dir, source_sha):
         ).map(el => getComputedStyle(el, '::after').content)""")
         require(len(icons) == 3 and all(icon not in ("none", "normal", '""') for icon in icons),
                 "Classic offline button glyphs are missing")
+        for viewport in ({"width": 900, "height": 620},
+                         {"width": 700, "height": 620}):
+            raw_page.set_viewport_size(viewport)
+            buttons = raw_page.evaluate("""() => {
+                const rect = el => {
+                    const b = el.getBoundingClientRect();
+                    return {left: b.left, right: b.right, top: b.top,
+                            bottom: b.bottom, width: b.width, height: b.height};
+                };
+                const row = document.querySelector('.button-row');
+                const tools = [
+                    document.querySelector('#theme-settings-open'),
+                    document.querySelector('.btn-action-small[title="Manual Patch"]'),
+                    document.querySelector('.btn-action-small[title="Reset Cache"]')
+                ];
+                return {
+                    layout: getComputedStyle(row).display,
+                    row: rect(row),
+                    play: rect(document.querySelector('#play-button')),
+                    tools: tools.map(rect)
+                };
+            }""")
+            require(buttons["layout"] == "grid",
+                    "Classic controls are not placed in the same grid")
+            require(buttons["row"]["width"] > 0 and
+                    buttons["play"]["left"] - max(t["right"] for t in buttons["tools"]) >= 7,
+                    "Classic action tools overlap or touch circular play button")
+            require(all(buttons["tools"][i]["bottom"] + 1 <=
+                        buttons["tools"][i + 1]["top"] for i in (0, 1)),
+                    "Classic action tools overlap vertically")
+            require(buttons["play"]["right"] <= buttons["row"]["right"] + 1 and
+                    buttons["play"]["left"] >= buttons["row"]["left"] - 1,
+                    "Classic play button overflows action grid")
+        raw_page.set_viewport_size({"width": 900, "height": 620})
         direct_preview = output_dir / "ragnar-classic-browser-preview.png"
         raw_page.screenshot(path=str(direct_preview), animations="disabled")
         require(direct_preview.stat().st_size > 5000,
