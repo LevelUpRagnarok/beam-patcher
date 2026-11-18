@@ -1,7 +1,7 @@
 # Dosya Yolu: .github/workflows/ragnar-legacy-theme-qa.yml
 # Amac: Ragnar classic Beam theme CSS/config/JS contract QA
 # Modul - GitHub Actions YAML
-# Version: 0.3.1-candidate
+# Version: 0.3.2-candidate
 # Aciklama: Offline source check only, no game files/patcher binary/release.
 # Bagimli Oldugu Katman: tools/tests/test_ragnar_legacy_theme.py | beam-ui/public/index.html
 name: Turkuaz Ragnarok Online Launcher Theme QA
@@ -27,6 +27,7 @@ on:
       - "tools/tests/test_turkuaz_premium_theme.py"
       - "tools/tests/test_turkuaz_reference_restore.py"
       - "tools/QA-THEME-BROWSER.py"
+      - "tools/Test-BeamNativeClassicUi.ps1"
       - "themes/ragnar-legacy/**"
       - "tools/tests/test_ragnar_legacy_theme.py"
       - ".github/workflows/ragnar-legacy-theme-qa.yml"
@@ -49,6 +50,7 @@ on:
       - "tools/tests/test_turkuaz_premium_theme.py"
       - "tools/tests/test_turkuaz_reference_restore.py"
       - "tools/QA-THEME-BROWSER.py"
+      - "tools/Test-BeamNativeClassicUi.ps1"
       - "themes/ragnar-legacy/**"
       - "tools/tests/test_ragnar_legacy_theme.py"
       - ".github/workflows/ragnar-legacy-theme-qa.yml"
@@ -119,4 +121,66 @@ jobs:
           name: beam-themes-chromium-qa-${{ github.sha }}
           path: build/theme-visual-qa
           retention-days: 7
+          if-no-files-found: error
+
+  # Real Windows executable and native Tauri/WebView2 startup acceptance.
+  # A QA-only portable ZIP is emitted for user acceptance, never a setup/release.
+  windows-native-classic-qa:
+    name: Windows real Beam Tauri Classic UI QA (no game or patch)
+    runs-on: windows-2025
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact branch without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile actual Windows native Beam executable
+        shell: pwsh
+        run: |
+          cargo build --release -p beam-patcher
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path 'target/release/beam-patcher.exe' -PathType Leaf)) {
+            throw 'Beam native executable missing'
+          }
+      - name: Stage offline QA-only standalone app, not an installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dest = 'build/native-classic-qa/portable'
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item 'target/release/beam-patcher.exe' (Join-Path $dest 'beam-patcher.exe')
+          $config = Get-Content 'installer/windows/config.qa.yml' -Raw -Encoding UTF8
+          if ($config -notmatch '(?m)^\s*qa_only:\s*true\s*$') {
+            throw 'Protected QA-only config marker is missing'
+          }
+          $old = '  theme: "levelup-modern"'
+          if (-not $config.Contains($old)) { throw 'Expected QA theme selector missing' }
+          $config = $config.Replace($old, '  theme: "ragnar-classic"')
+          Set-Content -LiteralPath (Join-Path $dest 'config.yml') -Value $config -Encoding UTF8
+          Copy-Item -LiteralPath 'beam-ui/public/assets' -Destination (Join-Path $dest 'assets') -Recurse
+          @'
+          BEAM PATCHER - UNSIGNED CLASSIC QA / TEST MODU
+          This is a portable test artifact, NOT a release, installer, or game client.
+          Real launcher GUI uses Windows Tauri/WebView2 on 900x620.
+          No game executable is configured; qa_only=true.
+          Live patch/update and game launch are NOT part of this test.
+          The profile contains only disabled loopback patch URLs.
+          Launch beam-patcher.exe and inspect button positions/theme controls.
+          Do not place this folder inside a real game installation.
+          '@ | Set-Content -LiteralPath (Join-Path $dest 'README-QA.txt') -Encoding UTF8
+      - name: Run real native Windows Tauri GUI QA smoke
+        shell: pwsh
+        run: |
+          ./tools/Test-BeamNativeClassicUi.ps1 -ExecutablePath 'build/native-classic-qa/portable/beam-patcher.exe' -ConfigPath 'build/native-classic-qa/portable/config.yml' -EvidenceDirectory 'build/native-classic-qa/evidence'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload QA-only native executable and real screenshot evidence (never setup)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beam-classic-native-windows-qa-${{ github.sha }}
+          path: build/native-classic-qa
+          retention-days: 5
           if-no-files-found: error
