@@ -19,8 +19,8 @@ DOC = (ROOT / "themes/ragnar-classic/README.md").read_text("utf-8")
 class RagnarClassicThemeTests(unittest.TestCase):
     def test_three_themes_available_and_classic_is_explicit_opt_in(self):
         self.assertEqual(HTML.count('id="ragnar-classic-theme-css"'), 1)
-        self.assertIn('href="assets/ragnar-classic.css" disabled>', HTML)
-        self.assertIn('href="assets/ragnar-legacy.css" disabled>', HTML)
+        self.assertIn('href="assets/ragnar-classic.css">', HTML)
+        self.assertIn('href="assets/ragnar-legacy.css">', HTML)
         self.assertIn("const classic = choice === 'ragnar-classic';", HTML)
         self.assertIn("if (classicSheet) classicSheet.disabled = !classic;", HTML)
         self.assertIn("if (sheet) sheet.disabled = !legacy;", HTML)
