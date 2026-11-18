@@ -2093,6 +2093,44 @@
             return await invoke('get_config');
         }
 
+        // NATIVE-VISUAL-ASSET-FALLBACK-001: WebView2 can display bundled
+        // index.html while resolving its sibling CSS links as empty sheets.
+        // Only Tauri may request this immutable allowlist from Rust. Keep the
+        // file-based Chromium preview and all game/patch commands unchanged.
+        async function ensureNativeThemeStyles() {
+            if (!isTauri || document.getElementById('beam-native-theme-fallback')) return;
+            const required = [
+                'assets/turkuaz-premium.css',
+                'assets/turkuaz-reference-restore.css'
+            ];
+            const stylesPresent = required.every(path => {
+                const link = document.querySelector('link[href="' + path + '"]');
+                try { return Boolean(link?.sheet?.cssRules?.length); }
+                catch (_) { return false; }
+            });
+            if (stylesPresent) return;
+
+            const bundle = await invoke('get_embedded_theme_assets');
+            if (!Array.isArray(bundle?.styles) || bundle.styles.length !== 5 ||
+                !bundle.styles.every(css => typeof css === 'string' && css.length > 100)) {
+                throw new Error('NATIVE_THEME_BUNDLE_INCOMPLETE');
+            }
+            let css = bundle.styles.join('\n');
+            for (const [name, svg] of Object.entries(bundle.artwork || {})) {
+                if (!/^turkuaz-[a-z0-9-]+\.svg$/.test(name) ||
+                    typeof svg !== 'string' || !svg.startsWith('<svg')) {
+                    throw new Error('NATIVE_THEME_ASSET_INVALID');
+                }
+                const dataUrl = 'url("data:image/svg+xml;charset=utf-8,' +
+                    encodeURIComponent(svg) + '")';
+                css = css.split("url('" + name + "')").join(dataUrl);
+            }
+            const style = document.createElement('style');
+            style.id = 'beam-native-theme-fallback';
+            style.textContent = css;
+            document.head.appendChild(style);
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             updateServerStatus();
             setInterval(updateServerStatus, 30000);
@@ -2115,6 +2153,13 @@
             }
             
             lastLoadedConfig = config;
+            try {
+                await ensureNativeThemeStyles();
+            } catch (error) {
+                // A missing native CSS bundle is a visible UI failure, never
+                // a reason to call patch/game logic or silently fake a pass.
+                console.error('Native theme fallback unavailable:', error);
+            }
             applyConfiguredTheme(config);
             // QA_DIAGNOSTIC_ONLY: browser CDP is unavailable on some hosted
             // WebView2 runners. Show public theme/style flags in the QA
@@ -2150,8 +2195,14 @@
                         ' disabled=' + String(link?.disabled) +
                         '\nQA CSS: classicRules=' + countRules(link?.sheet) +
                         ' restoreRules=' + countRules(restore?.sheet) +
+                        ' embeddedRules=' + countRules(
+                            document.getElementById('beam-native-theme-fallback')?.sheet
+                        ) +
                         ' banner=' + Math.round(banner?.getBoundingClientRect().height || 0) +
-                        ' art=' + String(style?.backgroundImage?.includes('turkuaz-user-classic-header.svg')) +
+                        ' art=' + String(
+                            style?.backgroundImage?.includes('turkuaz-user-classic-header.svg') ||
+                            style?.backgroundImage?.includes('data:image/svg+xml')
+                        ) +
                         ' body=' + getComputedStyle(document.body).backgroundColor;
                 };
                 updateDiagnostic();
