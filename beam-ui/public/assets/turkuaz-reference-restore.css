@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/beam-ui/public/assets/turkuaz-reference-restore.css
 Amac: Kullanicinin orijinal iki launcher konseptini Turkuaz Klasik ve Modern temalara geri koymak
 Modul - CSS opt-in visual restore
-Version: 1.0.6-candidate
+Version: 1.0.7-candidate
 Aciklama: Referans gorsellerini dekoratif artwork olarak kullanir; gercek button, haber,
 update, native QA guard, cache, oyun islemleri CSS ile taklit edilmez.
 Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-user-*.svg | turkuaz-premium.css
@@ -176,8 +176,9 @@ body.theme-ragnar-classic .button-row {
     display: grid;
     grid-column: 3;
     grid-row: 1 / 4;
-    grid-template-columns: 30px 82px;
-    grid-template-rows: repeat(3, 30px);
+    /* Utilities form a separate column; the round Start never overlaps. */
+    grid-template-columns: 34px 90px;
+    grid-template-rows: repeat(3, 32px);
     gap: 2px 12px;
     justify-content: center;
     align-content: center;
@@ -191,9 +192,9 @@ body.theme-ragnar-classic .button-row .btn-play-now {
     grid-row: 1 / 4;
     justify-self: center;
     align-self: center;
-    min-width: 82px;
-    width: 82px;
-    height: 82px;
+    min-width: 90px;
+    width: 90px;
+    height: 90px;
 }
 body.theme-ragnar-classic .button-row .btn-action-small {
     transition: none;
@@ -203,17 +204,17 @@ body.theme-ragnar-classic .button-row .btn-action-small {
     grid-column: 1;
     justify-self: center;
     align-self: center;
-    width: 30px;
-    min-width: 30px;
-    height: 30px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
 }
 body.theme-ragnar-classic #theme-settings-open { grid-row: 1; }
 body.theme-ragnar-classic .btn-action-small[title='Manual Patch'] { grid-row: 2; }
 body.theme-ragnar-classic .btn-action-small[title='Reset Cache'] { grid-row: 3; }
 body.theme-ragnar-classic .btn-play-now {
-    width: 82px;
-    height: 82px;
-    min-width: 82px;
+    width: 90px;
+    height: 90px;
+    min-width: 90px;
     background: radial-gradient(circle at 32% 18%,#f8f8fc,#c1c8d2 37%,#8f9ea9 67%,#617180);
     border: 4px solid #e3e5eb;
     color: #ffffff;
