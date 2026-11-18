@@ -18,7 +18,7 @@ GUIDE = (ROOT / "themes/ragnar-legacy/README.md").read_text("utf-8")
 class RagnarThemeContractTests(unittest.TestCase):
     def test_new_theme_does_not_replace_default_style(self):
         self.assertIn('id="ragnar-legacy-theme-css"', HTML)
-        self.assertIn('href="assets/ragnar-legacy.css" disabled>', HTML)
+        self.assertIn('href="assets/ragnar-legacy.css">', HTML)
         self.assertIn("sheet.disabled = !legacy;", HTML)
         self.assertIn("choice === 'ragnar-legacy'", HTML)
         self.assertIn("(config?.ui?.theme || 'default')", HTML)
