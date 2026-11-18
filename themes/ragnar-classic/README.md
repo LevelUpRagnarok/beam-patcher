@@ -2,7 +2,7 @@
 Dosya Yolu: themes/ragnar-classic/README.md
 Amac: Document last-used Ragnar THOR launcher look and safe Beam theme QA
 Modul - Markdown theme documentation
-Version: 0.1.1-candidate
+Version: 0.1.2-candidate
 Aciklama: Pixel-region reference only; no legacy binaries, live patches or GRFs
 Bagimli Oldugu Katman: beam-ui/public/index.html | assets/ragnar-classic.css
 -->
@@ -108,11 +108,17 @@ Start-Process ($Url + "?theme=ragnar-classic")
 
 Opening the HTML directly with no `?theme=` parameter selects the normal
 default unless a local theme preference was saved. The gear button can
-switch among four themes. The preview flag disables real patch/game actions.
+switch among four themes. **Every browser-only session is safely read-only**,
+including when the query parameter is omitted: Play, patch, cache, register
+and native game setup stay disabled. The explicit `?theme=` parameter
+only selects which theme to show; it does not enable game functions.
+The Classic theme's settings/reset buttons have visible offline glyphs
+without needing the optional third-party icon webfont.
 
 `tools/QA-THEME-BROWSER.py` now takes the normal 900x620 four-theme
-screenshots and an additional `ragnar-classic-maximized-browser.png`
-at **1650x900**, checking canvas bounds, actual header proportions and
-visibility of the second decorative rail. Browser QA is not a Windows
+screenshots and additional `ragnar-classic-maximized-browser.png`
+at **1650x900** plus `ragnar-classic-browser-preview.png` at 900x620,
+checking canvas bounds, actual header proportions, offline control glyphs,
+disabled browser-only actions, and visibility of the second decorative rail. Browser QA is not a Windows
 WebView2/Tauri acceptance test. Existing cropped reference images are
 not new licensed artwork or a replacement for the full source mockup.
