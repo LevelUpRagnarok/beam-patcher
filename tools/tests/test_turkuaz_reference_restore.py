@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_turkuaz_reference_restore.py
 # Amac: Kullanici tarafindan saglanan launcher gorsellerinin orijinal referansli geri donusunu denetler
 # Modul - Python unittest
-# Version: 1.0.1-candidate
+# Version: 1.0.2-candidate
 # Aciklama: Gercek referans resimlerinin lokal, self-contained ve sadece dekoratif olmasi
 # Bagimli Oldugu Katman: beam-ui/public/index.html | turkuaz-reference-restore.css | turkuaz-user-*.svg
 
@@ -86,6 +86,28 @@ class TurkuazReferenceRestoreTests(unittest.TestCase):
         self.assertIn("top: calc(100% + 5px)", CSS)
         self.assertNotIn("turkuaz-user-classic-castle.svg') center 43% / cover", CSS)
         self.assertNotIn("turkuaz-user-classic-header.svg') center bottom / cover", CSS)
+
+    def test_native_theme_css_fallback_uses_compiled_allowlist(self):
+        rust = (ROOT / "beam-ui/src/commands.rs").read_text(encoding="utf-8")
+        registration = (ROOT / "beam-ui/src/lib.rs").read_text(encoding="utf-8")
+        self.assertIn("get_embedded_theme_assets", rust)
+        self.assertIn("commands::get_embedded_theme_assets,", registration)
+        for name in ("ragnar-classic.css", "ragnar-legacy.css",
+                     "levelup-modern.css", "turkuaz-premium.css",
+                     "turkuaz-reference-restore.css",
+                     "turkuaz-user-classic-header.svg",
+                     "turkuaz-user-classic-castle.svg"):
+            self.assertIn('include_str!("../public/assets/' + name + '")', rust)
+
+        # Do not consult arbitrary native file paths or network for a theme.
+        self.assertIn("async function ensureNativeThemeStyles()", HTML)
+        self.assertIn("if (!isTauri ||", HTML)
+        self.assertIn("await invoke('get_embedded_theme_assets')", HTML)
+        self.assertIn("cssRules?.length", HTML)
+        self.assertIn("encodeURIComponent(svg)", HTML)
+        self.assertIn("style.id = 'beam-native-theme-fallback'", HTML)
+        self.assertIn("await ensureNativeThemeStyles();", HTML)
+        self.assertNotIn("fetch(", rust)
 
     def test_native_qa_skips_first_run_folder_picker_before_theme(self):
         # Regression: real QA Tauri screenshot was default-dark because a
