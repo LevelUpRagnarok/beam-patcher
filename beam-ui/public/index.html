@@ -2131,16 +2131,28 @@
                 document.body.appendChild(diagnostic);
                 const updateDiagnostic = () => {
                     const link = document.getElementById('ragnar-classic-theme-css');
+                    const restore = document.querySelector(
+                        'link[href="assets/turkuaz-reference-restore.css"]'
+                    );
                     const banner = document.querySelector('.turkuaz-reference-banner');
                     const style = banner && getComputedStyle(banner);
+                    const countRules = sheet => {
+                        try { return sheet ? sheet.cssRules.length : 'none'; }
+                        catch (_) { return 'blocked'; }
+                    };
+                    diagnostic.style.whiteSpace = 'pre-wrap';
+                    diagnostic.style.fontSize = '11px';
                     diagnostic.textContent =
-                        'QA VIEW: config=' + String(config?.ui?.theme) +
+                        'QA CONFIG: config=' + String(config?.ui?.theme) +
                         ' selected=' + activeLauncherTheme +
-                        ' classicClass=' + document.body.classList.contains('theme-ragnar-classic') +
-                        ' cssDisabled=' + String(link?.disabled) +
-                        ' cssLoaded=' + Boolean(link?.sheet) +
-                        ' refDisplay=' + String(style?.display) +
-                        ' bg=' + String(style?.backgroundImage?.includes('turkuaz-user-classic-header.svg'));
+                        ' class=' + document.body.classList.contains('theme-ragnar-classic') +
+                        ' link=' + Boolean(link?.sheet) +
+                        ' disabled=' + String(link?.disabled) +
+                        '\\nQA CSS: classicRules=' + countRules(link?.sheet) +
+                        ' restoreRules=' + countRules(restore?.sheet) +
+                        ' banner=' + Math.round(banner?.getBoundingClientRect().height || 0) +
+                        ' art=' + String(style?.backgroundImage?.includes('turkuaz-user-classic-header.svg')) +
+                        ' body=' + getComputedStyle(document.body).backgroundColor;
                 };
                 updateDiagnostic();
                 setTimeout(updateDiagnostic, 1000);
