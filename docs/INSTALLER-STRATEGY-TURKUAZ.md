@@ -84,3 +84,52 @@ NOT_RUN unless explicitly dispatched with actual signing materials.
 No main merge or production release is authorized by a green QA run.
 See docs/RUST-INSTALLER-BEAM-COMPAT.md and
 docs/WINDOWS-SETUP-PATCH-QA.md for test boundaries.
+
+## v1.0.1 product release checkpoint (2026-11-17)
+
+**Status: BLOCKED; NO PRODUCT RELEASE.** This checkpoint records verified
+repository state, not release approval or a new version tag. The source
+baseline is `main` at `a9f718310ff34d70bbfb255e9fb8a8faf5d5354b`.
+Workspace version is `1.0.1`, but no product GitHub Release or version
+tag was published as of this checkpoint.
+
+### Available QA evidence (not product acceptance)
+
+- [x] The last GRF Protection Offline QA and THOR Safety Regression
+  succeeded on `55d1b984a37edf7a5c0ebf1c10b79ecad5ea6904`:
+  [GRF](https://github.com/LevelUpRagnarok/beam-patcher/actions/runs/42295214091),
+  [THOR](https://github.com/LevelUpRagnarok/beam-patcher/actions/runs/42295213955).
+- [x] The Windows patch-core and Rust installer-candidate QA jobs
+  succeeded on `4709d9581f8be0d9ee7caba6e48a9baa3078369c`:
+  [patch core](https://github.com/LevelUpRagnarok/beam-patcher/actions/runs/42293712827),
+  [Rust candidate](https://github.com/LevelUpRagnarok/beam-patcher/actions/runs/42293712833).
+- [ ] The exact final product commit and signed distribution bytes have
+  **not** passed the protected product gate. There were no
+  `workflow_dispatch` runs in this repository at this checkpoint.
+
+### Required before a user-facing TurkuazSetup.exe
+
+- [ ] Define and review an actual production package identity, configuration,
+  target GRF/client compatibility profile and update URLs. The current
+  `levelupgt.beampatcher.qa` identity, `config.qa.yml`, `qa_only: true`,
+  `NO_CLIENT_CONFIGURED.exe` and loopback-only patch URLs are QA safeguards,
+  **not** a deployable game-client configuration.
+- [ ] Build the intended product from one pinned Beam commit and the
+  pinned Rust TurkuazInstaller source, with reproducible dependency state,
+  complete payload inventory and SHA-256 evidence. Validate exact source
+  and artifact correspondence, not just test fixtures.
+- [ ] Produce and independently verify the real publisher-signed
+  `TurkuazSetup.exe`, package, release manifest, detached CMS, external
+  trust pin and Authenticode chain through the protected workflow.
+- [ ] Complete native install, update, repair, rollback, uninstall,
+  cancellation/recovery and preservation of unmanaged files on clean
+  Windows 10/11, including non-admin, Unicode/space paths, shortcuts,
+  registry, the actual GUI wizard and consented migration.
+- [ ] Verify the exact final artifact, its SHA-256 and release notes against
+  the approved compatible client scope, then publish a version tag and
+  GitHub Release with **only** the approved signed distribution files.
+
+Until all gates are evidenced, do not relabel the QA artifact as stable,
+upload any ephemeral/test-signed installer or claim support for an
+unverified game client. Publishing GitHub Release is separate from a
+successful CI workflow or a short-lived Actions test artifact.
