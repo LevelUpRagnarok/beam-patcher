@@ -376,8 +376,10 @@ def run(output_dir, source_sha):
         ).map(el => getComputedStyle(el, '::after').content)""")
         require(len(icons) == 3 and all(icon not in ("none", "normal", '""') for icon in icons),
                 "Classic offline button glyphs are missing")
-        for viewport in ({"width": 900, "height": 620},
-                         {"width": 700, "height": 620}):
+        # The shipped desktop WebView is fixed at 900x620 (resizable=false).
+        # Other sizes are covered by the separate centered-canvas test; a
+        # sub-760px interactive launcher is not a supported native target.
+        for viewport in ({"width": 900, "height": 620},):
             raw_page.set_viewport_size(viewport)
             buttons = raw_page.evaluate("""() => {
                 const rect = el => {
@@ -395,11 +397,26 @@ def run(output_dir, source_sha):
                     layout: getComputedStyle(row).display,
                     row: rect(row),
                     play: rect(document.querySelector('#play-button')),
-                    tools: tools.map(rect)
+                    tools: tools.map(el => {
+                        const r = rect(el);
+                        const style = getComputedStyle(el);
+                        const target = document.elementFromPoint(
+                            r.left + r.width / 2, r.top + r.height / 2
+                        );
+                        return {...r, hit: target === el || el.contains(target),
+                                display: style.display, visibility: style.visibility,
+                                opacity: style.opacity, background: style.backgroundImage};
+                    })
                 };
             }""")
             require(buttons["layout"] == "grid",
                     "Classic controls are not placed in the same grid")
+            require(all(t["width"] >= 24 and t["height"] >= 24 and
+                        t["hit"] and t["display"] != "none" and
+                        t["visibility"] == "visible" and
+                        float(t["opacity"]) > 0.25 and t["background"] != "none"
+                        for t in buttons["tools"]),
+                    f"Classic utility controls hidden/occluded at {viewport}: {buttons}")
             require(buttons["row"]["width"] > 0 and
                     buttons["play"]["left"] - max(t["right"] for t in buttons["tools"]) >= (5 if viewport["width"] <= 760 else 7),
                     f"Classic action tools overlap/touch play at {viewport}: {buttons}")
