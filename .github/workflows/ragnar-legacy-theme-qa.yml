@@ -1,7 +1,7 @@
 # Dosya Yolu: .github/workflows/ragnar-legacy-theme-qa.yml
 # Amac: Ragnar classic Beam theme CSS/config/JS contract QA
 # Modul - GitHub Actions YAML
-# Version: 0.3.2-candidate
+# Version: 0.3.3-candidate
 # Aciklama: Offline source check only, no game files/patcher binary/release.
 # Bagimli Oldugu Katman: tools/tests/test_ragnar_legacy_theme.py | beam-ui/public/index.html
 name: Turkuaz Ragnarok Online Launcher Theme QA
@@ -176,6 +176,14 @@ jobs:
         run: |
           ./tools/Test-BeamNativeClassicUi.ps1 -ExecutablePath 'build/native-classic-qa/portable/beam-patcher.exe' -ConfigPath 'build/native-classic-qa/portable/config.yml' -EvidenceDirectory 'build/native-classic-qa/evidence'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve native failure screenshot and diagnostics without executable
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beam-classic-native-failure-evidence-${{ github.sha }}
+          path: build/native-classic-qa/evidence
+          retention-days: 5
+          if-no-files-found: warn
       - name: Upload QA-only native executable and real screenshot evidence (never setup)
         if: success()
         uses: actions/upload-artifact@v4
