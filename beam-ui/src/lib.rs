@@ -39,7 +39,7 @@ pub fn run_ui(config: Config) -> Result<()> {
     
     tauri::Builder::default()
         .manage(app_state)
-        .on_page_load(|window, _| native_visual_assets::install(window))
+        .on_page_load(|window, _| native_visual_assets::install(&window))
         .invoke_handler(tauri::generate_handler![
             commands::check_patches_available,
             commands::start_patching,
