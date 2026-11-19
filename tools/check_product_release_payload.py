@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/check_product_release_payload.py
 # Amac: QA-only Beam paketinin production TurkuazSetup icine girmesini engeller
 # Modul - Python / Offline product release preflight
-# Version: 1.0.0-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Rust tzpkg kimlik, executable byte ve JSON-as-YAML uretim profili kontrolu
 # Bagimli Oldugu Katman: tools/verify_installer_primary.py | tools/tests/test_release_payload_gate.py
 
@@ -142,10 +142,13 @@ def validate_config(config: dict, version: str) -> None:
     updater = config.get("updater")
     if updater is not None:
         require(isinstance(updater, dict), "invalid updater config")
-        if updater.get("enabled") is True:
-            require(public_https(updater.get("check_url")) and
-                    public_https(updater.get("update_url")),
-                    "enabled product updater requires public HTTPS endpoints")
+        # Beam's current self-updater can fetch from the upstream GitHub
+        # repository without a trusted publisher/signature release gate.
+        # Product EXE updates must use the separately approved TurkuazInstaller
+        # signed distribution, not the generic Beam self-update code path.
+        require(updater.get("enabled") is False and
+                updater.get("auto_update") is False,
+                "Beam self-updater must stay disabled for TurkuazInstaller product releases")
 
 
 def file_digest(path: Path) -> str:
