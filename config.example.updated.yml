@@ -1,6 +1,6 @@
 # Beam Patcher Configuration File
-# Version: 1.0.0
-# Last Updated: 2026-01-18
+# Version: 1.0.1
+# Last Updated: 2026-11-20
 # 
 # This configuration file controls the behavior and appearance of Beam Patcher.
 # All URLs should use HTTPS for security unless testing locally.
@@ -205,8 +205,10 @@ sso:
 # AUTO-UPDATER SETTINGS
 # ============================================================================
 updater:
-  # Enable patcher self-update feature
-  enabled: true
+  # TURKUAZ-ONLY-001: Beam executable updates are exclusively distributed by
+  # approved, publisher-signed TurkuazInstaller. This example is NOT a product
+  # release profile and MUST NOT enable the generic GitHub self-update path.
+  enabled: false
   
   # Version check URL (JSON format)
   # Returns: { "version": "1.0.1", "download_url": "...", "changelog": "..." }
@@ -221,8 +223,8 @@ updater:
   # false = notify user and ask permission
   auto_update: false
 
-  # This fork belongs to LevelUpGT. Do not silently use beamguides/beam-patcher
-  # as the self-update source. No release/automatic update is authorized here.
+  # Historical configuration override only. Updater stays disabled; this
+  # repository field is NOT a verified TurkuazInstaller release source.
   github_repo:
     owner: "LevelUpGT"
     name: "beam-patcher"
