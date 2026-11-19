@@ -2021,7 +2021,9 @@
                 } else if (/^assets\/[a-zA-Z0-9_.-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(imagePath)) {
                     // Always load trusted bundled images through the page origin:
                     // tauri://localhost/assets/N.png (or localhost browser QA).
-                    img.src = new URL(imagePath, document.baseURI).href;
+                    const name = imagePath.substring('assets/'.length);
+                    img.src = (isTauri && window.__BEAM_NATIVE_IMAGE_URLS?.[name]) ||
+                        new URL(imagePath, document.baseURI).href;
                 } else if (isTauri && !isOfflineQa && !isThemePreview) {
                     try {
                         const absolutePath = await invoke('resolve_resource_path', { path: imagePath });
@@ -2035,6 +2037,15 @@
             }
         }
         
+        window.addEventListener('beam-native-visual-assets-ready', () => {
+            // If Tauri assets arrive after config-driven image loading, retry
+            // only locally configured images; never change patch or game state.
+            if (isTauri && lastLoadedConfig) {
+                void loadImageGrid(lastLoadedConfig).catch(error =>
+                    console.warn('Embedded native image reload:', error));
+            }
+        });
+
         async function loadStatusImage(imageUrl) {
             const img = document.getElementById('status-image');
             const placeholder = document.getElementById('status-placeholder');
