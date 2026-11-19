@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamNativeClassicUi.ps1
 # Amac: Windows uzerinde gercek Beam Tauri penceresini QA modunda smoke test etmek
 # Modul - PowerShell / native UI QA
-# Version: 1.0.2-candidate
+# Version: 1.0.3-candidate
 # Aciklama: Gercek WebView2 penceresi kontrolu; oyun, patch, setup ve ag testi degildir
 # Bagimli Oldugu Katman: beam-patcher/src/main.rs | installer/windows/config.qa.yml
 
@@ -25,6 +25,7 @@ $report = [ordered]@{
     classic_banner_verified = $false
     classic_banner_bright_samples = 0
     classic_banner_required_samples = 14
+    native_ui_diagnostic = 'NOT_OBSERVED'
     screenshot_file = $null
     process_window_title = $null
     window_width = $null
@@ -165,9 +166,12 @@ public static class BeamQaUser32 {
             }
             finally { $frame.Dispose() }
         }
+        $child.Refresh()
+        $report.native_ui_diagnostic = $child.MainWindowTitle
         if (-not $report.classic_banner_verified) {
             $report.screenshot = 'CAPTURED_WRONG_THEME'
-            throw 'NATIVE_UI_CLASSIC_BANNER_NOT_RENDERED_AFTER_STARTUP'
+            throw ('NATIVE_UI_CLASSIC_BANNER_NOT_RENDERED_AFTER_STARTUP; title=' +
+                $report.native_ui_diagnostic)
         }
         $report.screenshot = 'CAPTURED_CLASSIC_BANNER_VERIFIED'
     }
