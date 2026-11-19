@@ -1418,6 +1418,22 @@
             document.body.classList.toggle('theme-ragnar-classic', classic);
             document.body.classList.toggle('theme-levelup-modern', modern);
             document.body.classList.toggle('theme-preview-only', isThemePreview);
+            if (isTauri && isOfflineQa) {
+                // QA-only native diagnostic: never expose this in production.
+                // A visible title lets the Windows HWND test distinguish theme
+                // selection from stylesheet/resource loading without devtools.
+                setTimeout(() => {
+                    const themeStyle = document.getElementById('ragnar-classic-theme-css');
+                    const banner = document.querySelector('.turkuaz-reference-banner');
+                    const bannerImage = banner ? getComputedStyle(banner).backgroundImage : 'none';
+                    const active = document.body.classList.contains('theme-ragnar-classic');
+                    const css = !!themeStyle && !themeStyle.disabled && !!themeStyle.sheet;
+                    const artwork = bannerImage !== 'none' && bannerImage.includes('turkuaz-user-classic-header');
+                    document.title = 'Turkuaz Ragnarok Online (TEST MODU) [classic=' +
+                        (active ? '1' : '0') + ';css=' + (css ? '1' : '0') +
+                        ';art=' + (artwork ? '1' : '0') + ']';
+                }, 800);
+            }
             document.getElementById('theme-settings-choice').value = choice;
             for (const option of document.querySelectorAll('[data-launcher-theme]')) {
                 option.setAttribute('aria-pressed',
