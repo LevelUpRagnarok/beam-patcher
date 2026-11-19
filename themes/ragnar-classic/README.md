@@ -2,7 +2,7 @@
 Dosya Yolu: themes/ragnar-classic/README.md
 Amac: Document last-used Ragnar THOR launcher look and safe Beam theme QA
 Modul - Markdown theme documentation
-Version: 0.1.0-candidate
+Version: 0.1.2-candidate
 Aciklama: Pixel-region reference only; no legacy binaries, live patches or GRFs
 Bagimli Oldugu Katman: beam-ui/public/index.html | assets/ragnar-classic.css
 -->
@@ -85,3 +85,40 @@ To test a real installer, first verify exact active 20220406 Ragexe
 identity, client loader compatibility, target GRF policy and rollback
 in an isolated game copy. Do not release the theme as a working patcher
 until Tauri desktop QA and patcher safety checks pass.
+
+## Classic browser layout correction (2026-11-18)
+
+A browser tab is not the same size as the 900x620 native launcher window.
+When the Turkuaz Klasik theme is selected, the launcher canvas now stays at
+up to **900x620** and is centered if the browser viewport is larger. The
+original reference header uses its native aspect ratio instead of `cover`
+cropping, while the narrow, cropped castle artwork is drawn on the right at
+its height-based scale instead of being enlarged across a widescreen news
+pane. The second rainbow rail is decorative and is no longer clipped by the
+premium CSS layer; actual update completion still comes only from the
+existing live progress control.
+
+Manual visual preview from a checked-out revision:
+
+```powershell
+$Page = (Resolve-Path "beam-ui/public/index.html").Path
+$Url = ([Uri]::new($Page)).AbsoluteUri
+Start-Process ($Url + "?theme=ragnar-classic")
+```
+
+Opening the HTML directly with no `?theme=` parameter selects the normal
+default unless a local theme preference was saved. The gear button can
+switch among four themes. **Every browser-only session is safely read-only**,
+including when the query parameter is omitted: Play, patch, cache, register
+and native game setup stay disabled. The explicit `?theme=` parameter
+only selects which theme to show; it does not enable game functions.
+The Classic theme's settings/reset buttons have visible offline glyphs
+without needing the optional third-party icon webfont.
+
+`tools/QA-THEME-BROWSER.py` now takes the normal 900x620 four-theme
+screenshots and additional `ragnar-classic-maximized-browser.png`
+at **1650x900** plus `ragnar-classic-browser-preview.png` at 900x620,
+checking canvas bounds, actual header proportions, offline control glyphs,
+disabled browser-only actions, and visibility of the second decorative rail. Browser QA is not a Windows
+WebView2/Tauri acceptance test. Existing cropped reference images are
+not new licensed artwork or a replacement for the full source mockup.

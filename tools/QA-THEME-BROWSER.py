@@ -2,7 +2,7 @@
 # Dosya Yolu: tools/QA-THEME-BROWSER.py
 # Amac: Dort Beam tema gorunumunu gercek Chromium uzerinde offline smoke ile dogrular
 # Modul - Python / Playwright / Visual QA
-# Version: 0.3.0-candidate
+# Version: 0.3.2-candidate
 # Aciklama: Yerel dosyalardan render; Tauri komutlari salt okunur test doubles; oyun/patch yok
 # Bagimli Oldugu Katman: beam-ui/public/index.html | assets/*.css | browser QA
 
@@ -248,6 +248,67 @@ def run(output_dir, source_sha):
             artifacts.append({"theme": theme, "file": screenshot.name, "sha256": digest(screenshot),
                               "bytes": screenshot.stat().st_size})
 
+            if theme == "ragnar-classic":
+                # User screenshot regression: maximized desktop browser must not
+                # stretch the original 900x620 launcher/artwork to 1650x900.
+                page.set_viewport_size({"width": 1650, "height": 900})
+                layout = page.evaluate("""() => {
+                    const box = (selector) => {
+                        const r = document.querySelector(selector).getBoundingClientRect();
+                        return {x:r.x, y:r.y, width:r.width, height:r.height,
+                                right:r.right, bottom:r.bottom};
+                    };
+                    const news = document.querySelector('.news-section-main');
+                    const progress = document.querySelector('.progress-bar-container');
+                    return {
+                        launcher: box('.patcher-container'),
+                        banner: box('.turkuaz-reference-banner'),
+                        left: box('.classic-ad-rail'),
+                        news: box('.news-section-main'),
+                        right: box('.image-grid-section'),
+                        start: box('#play-button'),
+                        bannerScale: getComputedStyle(
+                            document.querySelector('.turkuaz-reference-banner')).backgroundSize,
+                        sceneScale: getComputedStyle(news).backgroundSize,
+                        progressOverflow: getComputedStyle(progress).overflow,
+                        secondRail: getComputedStyle(progress, '::before').content
+                    };
+                }""")
+                outer = layout["launcher"]
+                require(abs(outer["width"] - 900) <= 2 and
+                        abs(outer["height"] - 620) <= 2,
+                        "Classic launcher stretched beyond reference size")
+                require(abs(outer["x"] - 375) <= 3 and abs(outer["y"] - 140) <= 3,
+                        "Classic launcher not centered in maximized browser")
+                require(125 <= layout["banner"]["height"] <= 155 and
+                        layout["bannerScale"] == "100% auto",
+                        "Classic illustrated header aspect ratio/crop regression")
+                require("auto 100%" in layout["sceneScale"],
+                        "Classic castle is being blown up via cover")
+                require(layout["progressOverflow"] == "visible" and
+                        layout["secondRail"] not in ("none", "normal"),
+                        "Classic second decorative progress rail is hidden")
+                require(160 <= layout["left"]["width"] <= 174 and
+                        154 <= layout["right"]["width"] <= 164,
+                        "Classic promo columns no longer match the reference")
+                for panel in ("left", "news", "right", "start"):
+                    rect = layout[panel]
+                    require(rect["width"] > 35 and rect["height"] > 35 and
+                            rect["x"] >= outer["x"] - 3 and
+                            rect["right"] <= outer["right"] + 3 and
+                            rect["y"] >= outer["y"] - 3 and
+                            rect["bottom"] <= outer["bottom"] + 3,
+                            "Classic panel clipped outside launcher: " + panel)
+                wide = output_dir / "ragnar-classic-maximized-browser.png"
+                page.screenshot(path=str(wide), animations="disabled")
+                require(wide.stat().st_size > 5000,
+                        "Maximized-browser screenshot unexpectedly small")
+                classic_wide_artifact = {
+                    "file": wide.name, "sha256": digest(wide), "bytes": wide.stat().st_size,
+                    "viewport": {"width": 1650, "height": 900}, "layout": layout
+                }
+                page.set_viewport_size({"width": 900, "height": 620})
+
         page.reload(wait_until="domcontentloaded")
         page.wait_for_function("document.body.classList.contains('theme-levelup-modern')")
         require(page.locator("#theme-settings-choice").input_value() == "levelup-modern",
@@ -276,6 +337,12 @@ def run(output_dir, source_sha):
         qa_page.wait_for_function("document.getElementById('play-button')?.textContent === 'QA / Oyun Kapalı'",
                                   timeout=15000)
         require(qa_page.locator("#play-button").is_disabled(), "QA Play action should be disabled")
+        require(qa_page.locator("#theme-settings-choice").input_value() == "ragnar-legacy",
+                "Native-like QA never applied its configured visual theme")
+        require(
+            qa_page.evaluate("() => !window.__QA_NATIVE_CALLS.includes('check_initial_setup')"),
+            "Native-like QA still prompts for a game folder before theme rendering",
+        )
         qa_page.locator("#theme-settings-open").click()
         require(qa_page.locator("#qa-workspace-select").is_visible(),
                 "QA folder selection must be accessible from Settings")
@@ -290,6 +357,97 @@ def run(output_dir, source_sha):
             "QA build unexpectedly queried patch feed",
         )
         qa_context.close()
+
+        # Standalone file:// / localhost browsing has no native backend,
+        # even when the user omits ?theme=. Keep Play, Patch and Setup inert.
+        standalone = browser.new_context(viewport={"width": 900, "height": 620})
+        raw_page = standalone.new_page()
+        raw_page.route("**/*", route)
+        raw_page.goto(preview_url + "?theme=ragnar-classic",
+                      wait_until="domcontentloaded", timeout=30000)
+        raw_page.wait_for_function("""() => {
+            const p = document.querySelector('#play-button');
+            return p?.disabled && p.textContent.trim() === 'Preview Only' &&
+                document.body.classList.contains('theme-ragnar-classic') &&
+                document.body.classList.contains('theme-preview-only');
+        }""", timeout=10000)
+        require(raw_page.locator("#theme-settings-open").is_enabled(),
+                "Standalone theme selector was disabled")
+        require(raw_page.locator("#theme-game-setup").is_disabled(),
+                "Standalone browser exposed real game settings")
+        require(raw_page.locator(".btn-action-small[title='Manual Patch']").is_disabled(),
+                "Standalone browser exposed patch command")
+        icons = raw_page.evaluate("""() => Array.from(
+            document.querySelectorAll('.btn-action-small')
+        ).map(el => getComputedStyle(el, '::after').content)""")
+        require(len(icons) == 3 and all(icon not in ("none", "normal", '""') for icon in icons),
+                "Classic offline button glyphs are missing")
+        # The shipped desktop WebView is fixed at 900x620 (resizable=false).
+        # Other sizes are covered by the separate centered-canvas test; a
+        # sub-760px interactive launcher is not a supported native target.
+        for viewport in ({"width": 900, "height": 620},):
+            raw_page.set_viewport_size(viewport)
+            buttons = raw_page.evaluate("""() => {
+                const rect = el => {
+                    const b = el.getBoundingClientRect();
+                    return {left: b.left, right: b.right, top: b.top,
+                            bottom: b.bottom, width: b.width, height: b.height};
+                };
+                const row = document.querySelector('.button-row');
+                const tools = [
+                    document.querySelector('#theme-settings-open'),
+                    document.querySelector('.btn-action-small[title="Manual Patch"]'),
+                    document.querySelector('.btn-action-small[title="Reset Cache"]')
+                ];
+                return {
+                    layout: getComputedStyle(row).display,
+                    row: rect(row),
+                    play: rect(document.querySelector('#play-button')),
+                    tools: tools.map(el => {
+                        const r = rect(el);
+                        const style = getComputedStyle(el);
+                        const target = document.elementFromPoint(
+                            r.left + r.width / 2, r.top + r.height / 2
+                        );
+                        return {...r, hit: target === el || el.contains(target),
+                                display: style.display, visibility: style.visibility,
+                                opacity: style.opacity, background: style.backgroundImage};
+                    })
+                };
+            }""")
+            require(buttons["layout"] == "grid",
+                    "Classic controls are not placed in the same grid")
+            require(all(t["width"] >= 24 and t["height"] >= 24 and
+                        t["hit"] and t["display"] != "none" and
+                        t["visibility"] == "visible" and
+                        float(t["opacity"]) > 0.25 and t["background"] != "none"
+                        for t in buttons["tools"]),
+                    f"Classic utility controls hidden/occluded at {viewport}: {buttons}")
+            require(buttons["row"]["width"] > 0 and
+                    buttons["play"]["left"] - max(t["right"] for t in buttons["tools"]) >= (5 if viewport["width"] <= 760 else 7),
+                    f"Classic action tools overlap/touch play at {viewport}: {buttons}")
+            require(all(buttons["tools"][i]["bottom"] + 1 <=
+                        buttons["tools"][i + 1]["top"] for i in (0, 1)),
+                    f"Classic action tools overlap vertically at {viewport}: {buttons}")
+            require(buttons["play"]["right"] <= buttons["row"]["right"] + 1 and
+                    buttons["play"]["left"] >= buttons["row"]["left"] - 1,
+                    "Classic play button overflows action grid")
+        raw_page.set_viewport_size({"width": 900, "height": 620})
+        direct_preview = output_dir / "ragnar-classic-browser-preview.png"
+        raw_page.screenshot(path=str(direct_preview), animations="disabled")
+        require(direct_preview.stat().st_size > 5000,
+                "Standalone screenshot unexpectedly small")
+        browser_preview_artifact = {
+            "file": direct_preview.name, "sha256": digest(direct_preview),
+            "bytes": direct_preview.stat().st_size
+        }
+        raw_page.goto(preview_url, wait_until="domcontentloaded", timeout=30000)
+        raw_page.wait_for_function("""() => {
+            const p = document.querySelector('#play-button');
+            return p?.disabled && p.textContent.trim() === 'Preview Only' &&
+                document.body.classList.contains('theme-preview-only');
+        }""", timeout=10000)
+        standalone.close()
         browser.close()
 
     summary = {
@@ -304,6 +462,9 @@ def run(output_dir, source_sha):
         "qa_ui_blocks_play_and_patch_feed": True,
         "external_requests_blocked": len(blocked),
         "screenshots": artifacts,
+        "classic_maximized_browser": classic_wide_artifact,
+        "classic_standalone_browser": browser_preview_artifact,
+        "standalone_browser_without_query_blocks_game": True,
         "desktop_webview2": "NOT RUN",
         "actual_gameplay": "NOT RUN",
         "published": False,

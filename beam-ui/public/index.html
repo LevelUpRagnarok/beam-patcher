@@ -1372,7 +1372,9 @@
             new URLSearchParams(window.location.search).get('theme') === 'ragnar-classic';
         const previewModern = !isTauri &&
             new URLSearchParams(window.location.search).get('theme') === 'levelup-modern';
-        const isThemePreview = previewTheme || previewClassic || previewModern;
+        // Any standalone browser session is a visual preview, even without
+        // a theme= query. Never display an actionable Play/Patch control there.
+        const isThemePreview = !isTauri;
         const allowedLauncherThemes = Object.freeze([
             'default', 'ragnar-legacy', 'ragnar-classic', 'levelup-modern'
         ]);
@@ -1392,12 +1394,15 @@
         }
 
         function applyConfiguredTheme(config, explicitTheme = null) {
-            // URL parameters only select the first browser preview. In Tauri,
-            // an explicit local preference overrides the deployment's UI theme.
+            // Browser URL selection only controls offline preview.
+            // In QA-only native builds the isolated config must win on initial
+            // render, regardless of a previously persisted normal theme.
+            // Manual settings clicks remain explicit and still work in QA.
             const previewChoice = previewModern ? 'levelup-modern' :
                 (previewClassic ? 'ragnar-classic' : (previewTheme ? 'ragnar-legacy' : null));
-            const requested = explicitTheme || previewChoice || safeStoredTheme() ||
-                (config?.ui?.theme || 'default');
+            const nativeQaChoice = isTauri && isOfflineQa ? config?.ui?.theme : null;
+            const requested = explicitTheme || previewChoice || nativeQaChoice ||
+                safeStoredTheme() || (config?.ui?.theme || 'default');
             const choice = allowedLauncherThemes.includes(requested) ? requested : 'default';
             activeLauncherTheme = choice;
             const legacy = choice === 'ragnar-legacy';
@@ -1413,6 +1418,22 @@
             document.body.classList.toggle('theme-ragnar-classic', classic);
             document.body.classList.toggle('theme-levelup-modern', modern);
             document.body.classList.toggle('theme-preview-only', isThemePreview);
+            if (isTauri && isOfflineQa) {
+                // QA-only native diagnostic: never expose this in production.
+                // A visible title lets the Windows HWND test distinguish theme
+                // selection from stylesheet/resource loading without devtools.
+                setTimeout(() => {
+                    const themeStyle = document.getElementById('ragnar-classic-theme-css');
+                    const banner = document.querySelector('.turkuaz-reference-banner');
+                    const bannerImage = banner ? getComputedStyle(banner).backgroundImage : 'none';
+                    const active = document.body.classList.contains('theme-ragnar-classic');
+                    const css = !!themeStyle && !themeStyle.disabled && !!themeStyle.sheet;
+                    const artwork = bannerImage !== 'none' && bannerImage.includes('turkuaz-user-classic-header');
+                    document.title = 'Turkuaz Ragnarok Online (TEST MODU) [classic=' +
+                        (active ? '1' : '0') + ';css=' + (css ? '1' : '0') +
+                        ';art=' + (artwork ? '1' : '0') + ']';
+                }, 800);
+            }
             document.getElementById('theme-settings-choice').value = choice;
             for (const option of document.querySelectorAll('[data-launcher-theme]')) {
                 option.setAttribute('aria-pressed',
@@ -2000,7 +2021,9 @@
                 } else if (/^assets\/[a-zA-Z0-9_.-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(imagePath)) {
                     // Always load trusted bundled images through the page origin:
                     // tauri://localhost/assets/N.png (or localhost browser QA).
-                    img.src = new URL(imagePath, document.baseURI).href;
+                    const name = imagePath.substring('assets/'.length);
+                    img.src = (isTauri && window.__BEAM_NATIVE_IMAGE_URLS?.[name]) ||
+                        new URL(imagePath, document.baseURI).href;
                 } else if (isTauri && !isOfflineQa && !isThemePreview) {
                     try {
                         const absolutePath = await invoke('resolve_resource_path', { path: imagePath });
@@ -2014,6 +2037,15 @@
             }
         }
         
+        window.addEventListener('beam-native-visual-assets-ready', () => {
+            // If Tauri assets arrive after config-driven image loading, retry
+            // only locally configured images; never change patch or game state.
+            if (isTauri && lastLoadedConfig) {
+                void loadImageGrid(lastLoadedConfig).catch(error =>
+                    console.warn('Embedded native image reload:', error));
+            }
+        });
+
         async function loadStatusImage(imageUrl) {
             const img = document.getElementById('status-image');
             const placeholder = document.getElementById('status-placeholder');
@@ -2096,7 +2128,10 @@
                 document.getElementById('play-button').disabled = true;
             }
 
-            const needsSetup = await invoke('check_initial_setup');
+            // QA intentionally has no game directory. Do not interrupt first
+            // render with a native folder picker that blocks theme application.
+            // Test workspace selection remains available from the gear menu.
+            const needsSetup = !isOfflineQa && await invoke('check_initial_setup');
             if (needsSetup && isTauri) {
                 config = await promptGameDirectorySelection();
             }

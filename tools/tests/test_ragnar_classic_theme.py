@@ -2,7 +2,7 @@
 # Dosya Yolu: tools/tests/test_ragnar_classic_theme.py
 # Amac: Screenshot-derived THOR classic layout safe opt-in, isolation, and preview contract
 # Modul - Python unittest offline-only source
-# Version: 0.2.0-candidate
+# Version: 0.2.1-candidate
 # Aciklama: No patch downloads, game execution, network, or GRF writes.
 # Bagimli Oldugu Katman: beam-ui/public/index.html | assets/ragnar-classic.css
 import re
@@ -45,7 +45,7 @@ class RagnarClassicThemeTests(unittest.TestCase):
     def test_preview_is_browser_only_and_cannot_patch_or_start_game(self):
         self.assertIn("const previewClassic = !isTauri &&", HTML)
         self.assertIn("get('theme') === 'ragnar-classic'", HTML)
-        self.assertIn("const isThemePreview = previewTheme || previewClassic || previewModern;", HTML)
+        self.assertIn("const isThemePreview = !isTauri;", HTML)
         self.assertIn("classList.toggle('theme-preview-only', isThemePreview)", HTML)
         self.assertIn("if (isThemePreview) {", HTML)
         self.assertIn("'#play-button, .btn-action-small, #register-btn-main'", HTML)
