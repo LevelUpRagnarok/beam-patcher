@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_release_payload_gate.py
 # Amac: Production Rust paketinin QA gibi yayinlanmasini negatif fixture ile engeller
 # Modul - Python unittest / Release profile
-# Version: 1.0.0-candidate
+# Version: 1.1.0-candidate
 # Aciklama: Sadece sentetik ZIP ve JSON testidir, gercek imza ve native kurulum degildir
 # Bagimli Oldugu Katman: tools/check_product_release_payload.py
 
@@ -43,7 +43,7 @@ def profile():
                 "manifest_file": "client-manifest.json",
             },
         },
-        "updater": {"enabled": False},
+        "updater": {"enabled": False, "auto_update": False},
     }
 
 
@@ -143,6 +143,42 @@ class ReleaseProfileTests(unittest.TestCase):
                 self.pack()
                 with self.assertRaisesRegex(ValueError, "public HTTPS"):
                     self.check()
+
+    def test_beam_updater_must_not_bypass_turkuaz_signed_release(self):
+        self.config["updater"].update({
+            "enabled": True,
+            "check_url": "https://updates.release-fixture.net/version.json",
+            "update_url": "https://updates.release-fixture.net/updates",
+            "github_repo": {
+                "owner": "levelupgt",
+                "name": "beam-patcher",
+                "bin_name": "beam-patcher",
+            },
+        })
+        self.pack()
+        with self.assertRaisesRegex(ValueError, "self-updater"):
+            self.check()
+
+    def test_beam_auto_update_rejected_even_when_disabled(self):
+        self.config["updater"]["auto_update"] = True
+        self.pack()
+        with self.assertRaisesRegex(ValueError, "self-updater"):
+            self.check()
+
+    def test_updater_flag_types_must_be_explicit_booleans(self):
+        for field in ("enabled", "auto_update"):
+            for bad in (None, "false", 0):
+                with self.subTest(field=field, value=bad):
+                    self.config = profile()
+                    self.config["updater"][field] = bad
+                    self.pack()
+                    with self.assertRaisesRegex(ValueError, "self-updater"):
+                        self.check()
+
+    def test_no_beam_updater_is_valid_for_turkuaz_only(self):
+        self.config.pop("updater")
+        self.pack()
+        self.assertFalse(self.check()["release_ready"])
 
     def test_duplicate_json_keys_or_ambiguous_yaml_rejected(self):
         self.pack(raw_config=b'{"app": {}, "app": {}, "patcher": {}}')
