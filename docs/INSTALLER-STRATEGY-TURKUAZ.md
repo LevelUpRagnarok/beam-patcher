@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/INSTALLER-STRATEGY-TURKUAZ.md
 Amac: BeamPatcher tek TurkuazInstaller Windows dagitim ve guvenlik politikasini tanimlar
 Modul - Markdown / Installer Policy
-Version: 3.0.0-candidate
+Version: 3.0.1-candidate
 Aciklama: Ikinci kurulum kaldirildi; imzasiz/test-signed dagitim yasaktir
 Bagimli Oldugu Katman: AGENTS.md | tools/verify_installer_primary.py
 -->
@@ -133,3 +133,23 @@ Until all gates are evidenced, do not relabel the QA artifact as stable,
 upload any ephemeral/test-signed installer or claim support for an
 unverified game client. Publishing GitHub Release is separate from a
 successful CI workflow or a short-lived Actions test artifact.
+
+
+## Product self-update isolation (2026-11-20)
+
+A product package must disable Beam's generic executable self-updater using
+`updater.enabled: false` and `updater.auto_update: false`, or omit the
+optional updater configuration entirely. The existing Beam updater uses an
+upstream GitHub release backend (default `beamguides/beam-patcher`) and does
+not establish the independently approved TurkuazInstaller publisher trust
+chain. Disabling the Beam EXE updater does **not** disable the separate
+game-data patch list and GRF engine.
+
+The production `tools/check_product_release_payload.py` preflight rejects
+any enabled or implicitly configured Beam self-update flags, even with
+HTTPS endpoints. The source of all executable updates must instead be a
+reviewed, publisher-signed TurkuazInstaller workflow; current signed release
+readiness remains BLOCKED. This is structural policy only, not cryptographic
+verification and not a signed-release acceptance result.
+
+This requirement does not alter previously accepted QA-only Beam installers.
