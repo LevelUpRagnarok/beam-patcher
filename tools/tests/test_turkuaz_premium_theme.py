@@ -77,7 +77,8 @@ class TurkuazPremiumThemeTests(unittest.TestCase):
 
     def test_local_svg_renderer_is_allowed_in_bundled_asset_path(self):
         self.assertIn('(?:png|jpe?g|webp|gif|svg)', HTML)
-        self.assertIn("img.src = new URL(imagePath, document.baseURI).href;", HTML)
+        self.assertIn("new URL(imagePath, document.baseURI).href;", HTML)
+        self.assertIn("window.__BEAM_NATIVE_IMAGE_URLS?.[name]", HTML)
         self.assertIn("img.onerror = () => {", HTML)
         self.assertIn("tile?.classList.add('is-image-missing')", HTML)
         self.assertIn("img.naturalWidth > 0", QA)
