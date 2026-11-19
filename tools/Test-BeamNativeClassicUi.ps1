@@ -1,7 +1,7 @@
 # Dosya Yolu: REPO_ROOT/tools/Test-BeamNativeClassicUi.ps1
 # Amac: Windows uzerinde gercek Beam Tauri penceresini QA modunda smoke test etmek
 # Modul - PowerShell / native UI QA
-# Version: 1.0.3-candidate
+# Version: 1.0.4-candidate
 # Aciklama: Gercek WebView2 penceresi kontrolu; oyun, patch, setup ve ag testi degildir
 # Bagimli Oldugu Katman: beam-patcher/src/main.rs | installer/windows/config.qa.yml
 
@@ -26,6 +26,8 @@ $report = [ordered]@{
     classic_banner_bright_samples = 0
     classic_banner_required_samples = 14
     native_ui_diagnostic = 'NOT_OBSERVED'
+    right_tile_color_span = 0
+    right_tile_verified = $false
     screenshot_file = $null
     process_window_title = $null
     window_width = $null
@@ -174,6 +176,28 @@ public static class BeamQaUser32 {
                 $report.native_ui_diagnostic)
         }
         $report.screenshot = 'CAPTURED_CLASSIC_BANNER_VERIFIED'
+
+        # The previous native screenshot had correct buttons but empty blue
+        # right promo cards. Sample both card interiors, outside label bands.
+        # A flat/gradient placeholder is not a verified user artwork render.
+        $bitmap = [System.Drawing.Bitmap]::FromFile($out)
+        try {
+            $colors = New-Object System.Collections.Generic.List[int]
+            foreach ($yRatio in @(0.36, 0.41, 0.47, 0.61, 0.66, 0.72)) {
+                foreach ($xRatio in @(0.82, 0.86, 0.91, 0.95)) {
+                    $pixel = $bitmap.GetPixel([int]($width * $xRatio), [int]($height * $yRatio))
+                    $colors.Add([int]$pixel.R + [int]$pixel.G + [int]$pixel.B)
+                }
+            }
+            $report.right_tile_color_span = ($colors | Measure-Object -Maximum).Maximum -
+                ($colors | Measure-Object -Minimum).Minimum
+            $report.right_tile_verified = $report.right_tile_color_span -ge 100
+        }
+        finally { $bitmap.Dispose() }
+        if (-not $report.right_tile_verified) {
+            $report.screenshot = 'CAPTURED_CLASSIC_WITH_MISSING_RIGHT_ART'
+            throw 'NATIVE_UI_RIGHT_PROMO_ARTWORK_NOT_RENDERED'
+        }
     }
     Write-Host 'BEAM_NATIVE_CLASSIC_WINDOW_OPENED_QA_ONLY'
 }
