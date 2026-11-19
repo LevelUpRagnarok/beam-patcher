@@ -2,7 +2,7 @@
 # Dosya Yolu: REPO_ROOT/tools/tests/test_turkuaz_branding.py
 # Amac: Turkuaz Ragnarok Online gorunur marka ve QA uyumluluk kontrati
 # Modul - Python unittest
-# Version: 2.0.0-candidate
+# Version: 2.1.0-candidate
 # Aciklama: Eski tema ID'lerini, izole QA profilini ve tek Rust installer politikasini korur
 # Bagimli Oldugu Katman: beam-ui/public/index.html | beam-core/src/config.rs | installer/windows
 
@@ -59,6 +59,14 @@ class TurkuazBrandingTests(unittest.TestCase):
         self.assertIn("is_qa_app_name(&config.app.name)", CONFIG)
         self.assertIn("is_qa_app_name(&self.app.name)", CONFIG)
         self.assertIn("config.patcher.qa_only = true;", CONFIG)
+
+    def test_example_config_does_not_enable_generic_executable_update(self):
+        example = (ROOT / "config.example.updated.yml").read_text(encoding="utf-8")
+        section = example.split("\nupdater:\n", 1)[1].split("\n# =", 1)[0]
+        self.assertIn("TURKUAZ-ONLY-001", section)
+        self.assertIn("enabled: false", section)
+        self.assertIn("auto_update: false", section)
+        self.assertNotIn("enabled: true", section)
 
     def test_rust_is_the_only_active_installer_policy(self):
         retired = (
