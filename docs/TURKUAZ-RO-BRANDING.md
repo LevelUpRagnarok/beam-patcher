@@ -2,7 +2,7 @@
 Dosya Yolu: REPO_ROOT/docs/TURKUAZ-RO-BRANDING.md
 Amac: Launcher gorunur marka adi ve kalici teknik kimlikleri ayristirir
 Modul - Markdown documentation
-Version: 1.0.0-candidate
+Version: 1.0.1-candidate
 Aciklama: Turkuaz Ragnarok Online markasi, QA migration sinirlari ve installer politikasi
 Bagimli Oldugu Katman: beam-ui/public/index.html | beam-core/src/config.rs | installer/windows
 -->
@@ -32,10 +32,15 @@ Bagimli Oldugu Katman: beam-ui/public/index.html | beam-core/src/config.rs | ins
 
 ## Windows dagitim kurali
 
-BURAK-INS-001 degismez: TurkuazInstaller birincil, NSIS yalnizca private
-yedektir. Eski Inno dosyasi tarihsel QA taslagidir; tek basina yayinlanamaz.
-Onayli imzali Turkuaz paket/Windows native ve gercek Ragnarok client smoke
-olmadan production release yoktur.
+TURKUAZ-ONLY-001: Windows kurulumunda yalniz Rust TurkuazInstaller
+kullanilir. NSIS, Inno veya diger bagimsiz yedek setup derlenmez ve dagitilmaz.
+Onayli yayinci Authenticode imzasi, detached CMS, harici certificate pin,
+exact-source paket, Windows 10/11 native kabul ve gercek Ragnarok client
+uyumlulugu dogrulanmadan production release olusturulmaz.
+
+Beam generic self-update'i TurkuazInstaller imzali dagitim denetiminin
+yerine kullanilmaz. Product config'te updater.enabled ve
+updater.auto_update false kalir. Oyun icerigi patch/GRF motoru ayridir.
 
 ## Dogrulama
 
