@@ -2,7 +2,7 @@
 # Dosya Yolu: tools/tests/test_levelup_modern_theme.py
 # Amac: Turkuaz Modern gorunumu ve offline QA guvenlik kontratini dogrular
 # Modul - Python unittest / Node source behavior QA
-# Version: 0.3.2-candidate
+# Version: 0.3.3-candidate
 # Aciklama: CSS tema scope, browser-only preview, local preference ve native setup sinirlari
 # Bagimli Oldugu Katman: beam-ui/public/index.html | assets/levelup-modern.css
 
@@ -54,7 +54,8 @@ class LevelupModernThemeTests(unittest.TestCase):
         self.assertIn("if (previewModern) return [", HTML)
         self.assertIn("url: 'about:blank'", HTML)
         self.assertIn("const builtInGridImages = Object.freeze([", HTML)
-        self.assertIn("img.src = new URL(imagePath, document.baseURI).href;", HTML)
+        self.assertIn("new URL(imagePath, document.baseURI).href;", HTML)
+        self.assertIn("window.__BEAM_NATIVE_IMAGE_URLS?.[name]", HTML)
         self.assertIn("img.onerror = null;", HTML)
         self.assertIn("tile?.classList.add('is-image-missing')", HTML)
         self.assertNotIn("https://via.placeholder.com", HTML)
