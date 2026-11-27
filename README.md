@@ -1,3 +1,12 @@
+<!--
+Dosya Yolu: REPO_ROOT/README.md
+Amac: Beam Patcher tanitim ve kullanim rehberi
+Modul - Markdown
+Version: 1.0.1
+Aciklama: Mevcut Cargo workspace surumune ait README baglantilari ve dokumantasyon navigasyonu
+Bagimli Oldugu Katman: Documentation
+-->
+
 <div align="center">
 
 # 🚀 Beam Patcher
@@ -10,7 +19,6 @@ A powerful, cross-platform game patcher for Ragnarok Online built with Rust and 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=flat&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/tauri-%2324C8DB.svg?style=flat&logo=tauri&logoColor=%23FFFFFF)](https://tauri.app/)
-[![Discord](https://img.shields.io/discord/YOUR_DISCORD_ID?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/DeMpCu2Q)
 [![GitHub](https://img.shields.io/badge/GitHub-beamguides%2Fbeam--patcher-181717?logo=github)](https://github.com/beamguides/beam-patcher)
 
 [Features](#features) • [Installation](#installation) • [Documentation](#configuration) • [Discord](https://discord.gg/DeMpCu2Q) • [Support](#support)
@@ -466,6 +474,8 @@ GRF (Game Resource File) is the primary archive format for Ragnarok Online.
 - ✅ Cross-platform compatibility
 - ✅ Built-in corruption detection
 
+## Development
+
 ### Building
 
 ```bash
@@ -634,7 +644,7 @@ This patcher is intended for authorized Ragnarok Online private-server tooling. 
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See the [pull request template](PULL_REQUEST_TEMPLATE.md) for the contribution checklist.
 
 **Ways to contribute:**
 - 🐛 Report bugs via GitHub Issues
@@ -679,7 +689,7 @@ This project is open source and maintained by the Ragnarok Online private server
 - See [Theme Guide](themes/README.md) for custom branding
 
 **For Developers:**
-- See [Contributing Guide](CONTRIBUTING.md) for contribution guidelines
+- See the [pull request template](PULL_REQUEST_TEMPLATE.md) for contribution requirements
 - Visit [GitHub Repository](https://github.com/beamguides/beam-patcher)
 
 ---
